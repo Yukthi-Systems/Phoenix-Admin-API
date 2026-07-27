@@ -256,6 +256,14 @@ async def domain_edit_info(organization_id: str, domain_name: str, data: PatchDo
         db=PgDB
     )
 
+    # Hybrid mode and catch-all validation
+    # Any one should be enabled, or both disabled. If one is enabled, the other should be disabled.
+    if data.enable_catch_all and data.enable_hybrid_mode:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"message": "Both catch-all and hybrid mode cannot be enabled at the same time"}
+        )
+
     # Edit all the domain details/info
     domains = await update_domain_info(
         db_session=PgDB,
