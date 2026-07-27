@@ -611,15 +611,16 @@ async def user_get_details(organization_id: str, user_id: str, user: CurrentUser
     """
     Get user details by user ID
     """
-    await validate_permissions(
-        current_user_permissions=user.permissions,
-        basic_permissions=["user:view"],
-        organization_level_permissions=["organization:view"],
-        current_user_organization_id=user.organization_id,
-        accessed_organization_id=organization_id,
-        user_id=user_id,
-        db=PgDB
-    )
+    if user.user_id != user_id:
+        await validate_permissions(
+            current_user_permissions=user.permissions,
+            basic_permissions=["user:view"],
+            organization_level_permissions=["organization:view"],
+            current_user_organization_id=user.organization_id,
+            accessed_organization_id=organization_id,
+            user_id=user_id,
+            db=PgDB
+        )
 
     user_details = await get_basic_user_details_by_id(db_session=PgDB, user_id=user_id, organization_id=organization_id)
 
@@ -638,15 +639,16 @@ async def user_update_profile_pic(organization_id: str, file: UploadFile, user_i
     """
     Update the user profile picture
     """
-    await validate_permissions(
-        current_user_permissions=user.permissions,
-        basic_permissions=["user:view", "user:edit"],
-        organization_level_permissions=["organization:view"],
-        current_user_organization_id=user.organization_id,
-        accessed_organization_id=organization_id,
-        user_id=user_id,
-        db=PgDB
-    )
+    if user.user_id != user_id:
+        await validate_permissions(
+            current_user_permissions=user.permissions,
+            basic_permissions=["user:view", "user:edit"],
+            organization_level_permissions=["organization:view"],
+            current_user_organization_id=user.organization_id,
+            accessed_organization_id=organization_id,
+            user_id=user_id,
+            db=PgDB
+        )
 
     # Accept only PNG files and of less than 5MB
     if file.content_type != "image/png":
@@ -684,15 +686,16 @@ async def user_get_profile_pic(organization_id: str, user_id: str, user: Current
     """
     Get the user profile picture
     """
-    await validate_permissions(
-        current_user_permissions=user.permissions,
-        basic_permissions=["user:view"],
-        organization_level_permissions=["organization:view"],
-        current_user_organization_id=user.organization_id,
-        accessed_organization_id=organization_id,
-        user_id=user_id,
-        db=PgDB
-    )
+    if user.user_id != user_id:
+        await validate_permissions(
+            current_user_permissions=user.permissions,
+            basic_permissions=["user:view"],
+            organization_level_permissions=["organization:view"],
+            current_user_organization_id=user.organization_id,
+            accessed_organization_id=organization_id,
+            user_id=user_id,
+            db=PgDB
+        )
 
     # Download the profile picture from S3
     file_data: bytes = get_s3_file(
