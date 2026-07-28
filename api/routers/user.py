@@ -28,6 +28,7 @@ from src.utils.base.libraries import (
     datetime,
     BytesIO,
     Request,
+    logging,
     secrets,
     status,
     orjson,
@@ -101,8 +102,11 @@ async def user_login_webmail(data: AuthRequest, CacheDB: MemcachedDep, PgDB: Pos
             content={"message": "Recaptcha validation failed - Are you a bot?"}
         )
 
+    logging.info(f"User login attempt for {data.user_name}; Recaptcha validated successfully")
+
     # Get the user details from the database
     user_details = await get_basic_user_details(db_session=PgDB, user_name=data.user_name)
+    logging.info(f"User details fetched from DB for {data.user_name}: {user_details}")
 
     # Check if organization is active
     users_org_details = await get_organization_details(

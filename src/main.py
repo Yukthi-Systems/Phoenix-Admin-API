@@ -681,14 +681,17 @@ def validate_recaptcha(token: str) -> bool:
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=5)
         result = response.json()
-        logging.debug(f"Recaptcha validation response: {result}")
+
+        logging.debug(f"Recaptcha validation status code: {response.status_code}")
 
         response.raise_for_status()
         if "tokenProperties" in result:
             token_properties = result["tokenProperties"]
             if token_properties.get("valid"):
+                logging.debug("Recaptcha token is valid")
                 return True
 
+        logging.warning(f"Recaptcha token is invalid: {result}")
         return False
 
     except Exception as e:
