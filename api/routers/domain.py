@@ -349,6 +349,9 @@ async def domain_delete(organization_id: str, domain_name: str, user: CurrentUse
             content={"message": "Domain cannot be deleted as it has associated identities."}
         )
 
+    # Fetch the domain details before deletion
+    domain_details = await get_domain_details(db_session=PgDB, domain_name=domain_name)
+
     # Delete the domain
     await delete_domain_and_update_quota(
         db_session=PgDB,
@@ -356,8 +359,10 @@ async def domain_delete(organization_id: str, domain_name: str, user: CurrentUse
         domain_name=domain_name
     )
 
-    # Start the domain deletion process
-    delete_domain_process(domain_name=domain_name)
+    # Do it if the domain was DNS TXT verified
+    if domain_details["is_dns_txt_verified"]:
+        # Start the domain deletion process
+        delete_domain_process(domain_name=domain_name)
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
