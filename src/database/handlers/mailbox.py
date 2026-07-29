@@ -54,7 +54,6 @@ async def _raise_check_mailbox_exists(db_session: PgSession, exception_message: 
 async def create_new_mailbox(
     db_session: PgSession,
     email_identity: str,
-    is_enabled: bool,
     allocated_quota: float,
     general_policy_id: str | None,
     forwarding_policy_id: str | None,
@@ -91,7 +90,7 @@ async def create_new_mailbox(
             """,
             email_identity,
             domain_name,
-            is_enabled,
+            False,
             allocated_quota,
             0.0,
             DEFAULT_SERVER_ID,  # Default server ID
@@ -276,6 +275,16 @@ async def update_mailbox_activation_status(db_session: PgSession, email: str, is
     )
 
     try:
+        # If the MailBox is attached to default server and is not enabled, then we do not allow to enable it
+        row = await db_session.fetchrow(
+            "SELECT server_id FROM mailboxes WHERE email = $1", email
+        )
+        if row and str(row["server_id"]) == DEFAULT_SERVER_ID and is_enabled:
+            raise All_Exceptions(
+                message=f"Cannot enable mailbox {email} as it is attached to the default server",
+                status_code=status.HTTP_403_FORBIDDEN
+            )
+
         # Update the activation status of the mailbox
         await db_session.execute(
             """

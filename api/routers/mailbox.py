@@ -76,7 +76,6 @@ async def domain_mailbox(data: CreateMailBoxForm, user: CurrentUser, PgDB: Postg
     await create_new_mailbox(
         db_session=PgDB,
         email_identity=data.email_identity,
-        is_enabled=data.enabled,
         allocated_quota=data.allocate_quota,
         general_policy_id=data.general_policy_id,
         forwarding_policy_id=data.forwarding_policy_id,
