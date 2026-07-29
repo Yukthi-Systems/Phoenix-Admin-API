@@ -452,7 +452,7 @@ async def delete_mailbox_and_update_quota(db_session: PgSession, email: str, org
 
         current_quota = float(row["quota_allocated"])
         server_id = str(row["server_id"])
-        logging.info(f"Deleting mailbox {email} with current quota {current_quota} and server_id {server_id}")
+        logging.debug(f"Deleting mailbox {email} with current quota {current_quota} and server_id {server_id} and updating organization {org_id} quota")
 
         # TODO: Do it in a transaction to ensure that either both the mailbox is deleted and the quota is updated or neither happens
 

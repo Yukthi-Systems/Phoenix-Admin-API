@@ -361,7 +361,7 @@ async def delete_mailbox(domain_name: str, email_prefix: str, user: CurrentUser,
     server_id = await delete_mailbox_and_update_quota(
         db_session=PgDB,
         email=f"{email_prefix}@{domain_name}",
-        org_id=user.organization_id
+        org_id=domain_info["managed_by"]
     )
 
     # Delete the email from the server

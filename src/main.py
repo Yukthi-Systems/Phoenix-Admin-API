@@ -291,6 +291,7 @@ def get_s3_file(file_name: str, organization_id: str) -> bytes:
         return response['Body'].read()
 
     except s3.exceptions.NoSuchKey:
+        # TODO: Remove this kinds of errors too much clutter in the logs
         raise All_Exceptions(message="File not found", status_code=status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
