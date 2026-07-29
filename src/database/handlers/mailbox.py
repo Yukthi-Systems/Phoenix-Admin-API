@@ -20,7 +20,7 @@ version 3 along with this program. If not, see
 """
 
 
-from src.utils.base.libraries import aiomcache, asyncpg, TypeAlias, status
+from src.utils.base.libraries import aiomcache, asyncpg, TypeAlias, status, logging
 from src.utils.base.constants import DEFAULT_SERVER_ID
 from .organization import validate_organization_quota
 from .domain import _raise_check_domain_exists
@@ -452,6 +452,9 @@ async def delete_mailbox_and_update_quota(db_session: PgSession, email: str, org
 
         current_quota = float(row["quota_allocated"])
         server_id = str(row["server_id"])
+        logging.info(f"Deleting mailbox {email} with current quota {current_quota} and server_id {server_id}")
+
+        # TODO: Do it in a transaction to ensure that either both the mailbox is deleted and the quota is updated or neither happens
 
         # Delete the mailbox
         await db_session.execute(
