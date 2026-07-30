@@ -28,6 +28,7 @@ from src.database import (
     delete_mailbox_and_update_quota,
     get_all_mailboxes_under_domain,
     fetch_full_id_info_by_admin,
+    get_organization_details,
     bulk_export_mailboxes,
     update_mailbox_quota,
     list_only_mailboxes,
@@ -71,6 +72,14 @@ async def domain_mailbox(data: CreateMailBoxForm, user: CurrentUser, PgDB: Postg
         user_id=None,
         db=PgDB
     )
+
+    # Organization should have enough quota and Email Service should be enabled
+    org_info = await get_organization_details(db_session=PgDB, org_id=domain_info["managed_by"])
+    if not org_info["email_service_enabled"]:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"message": "Email service is not enabled for the organization"}
+        )
 
     # Create a new MailBox
     await create_new_mailbox(
