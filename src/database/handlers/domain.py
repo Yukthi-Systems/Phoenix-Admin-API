@@ -334,12 +334,10 @@ async def update_domain_activation_status(db_session: PgSession, organization_id
         exception_message=f"Domain {domain_name} does not exist"
     )
 
-    # TODO: Make sure its not possible to activate a domain if its DNS TXT verification is not done (is_dns_txt_verified=False)
-
     try:
         # Update the activation status of the domain
         await db_session.execute(
-            "UPDATE domains SET is_active = $1 WHERE domain_name = $2 AND managed_by = $3",
+            "UPDATE domains SET is_active = $1 WHERE domain_name = $2 AND managed_by = $3 AND is_dns_txt_verified = TRUE",
             is_active,
             domain_name,
             organization_id
