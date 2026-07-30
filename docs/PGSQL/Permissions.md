@@ -16,7 +16,7 @@
 | Support Admin             | support_admin:view                      | support_admin:create      | support_admin:edit                      | support_admin:delete      |
 | Maintenance Details       |                                         | maintenance:create        | maintenance:edit                        | maintenance:delete        |
 | API Keys                  | api_keys:view                           | api_keys:create           | api_keys:edit                           | api_keys:delete           |
-| Chat Service Config       | chat:view                               |                           | chat:edit                               |                           |
+| Chat Service Config       | chat:view                               | chat:create               | chat:edit                               | chat:delete               |
 | E-Mail Identities         | identity:view                           | identity:create           | identity:edit                           | identity:delete           |
 | E-Mail Identity Admin     | identity:admin:view                     |                           |                                         |                           |
 | File Service Config       | file:view                               | file:create               | file:edit                               | file:delete               |

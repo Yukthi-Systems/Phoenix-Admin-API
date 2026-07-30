@@ -274,7 +274,7 @@ async def create_chat_user_for_domain(domain_name: str, user_email: str, user: C
 
     await validate_permissions(
         current_user_permissions=user.permissions,
-        basic_permissions=["chat:edit"],
+        basic_permissions=["chat:create", "chat:view"],
         organization_level_permissions=["organization:view"],
         current_user_organization_id=user.organization_id,
         accessed_organization_id=domain_info["managed_by"],
