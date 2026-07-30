@@ -224,18 +224,20 @@ async def create_new_organization(
             hierarchy_path
         )
 
-        # Reduse the parent organization's quota
-        await db_session.execute(
-            """
-            UPDATE organizations
-            SET quota_utilized = quota_utilized + $1,
-                utilized_email_identities = utilized_email_identities + $2
-            WHERE organization_id = $3 AND is_active = TRUE
-            """,
-            quota_allocated,
-            allocated_email_identities,
-            parent_organization_id
-        )
+        # If the allocated quota is -1 (unlimited), then we do not need to update the parent organization's quota
+        # Reduce the parent organization's quota if the allocated quota is not unlimited
+        if quota_allocated != -1:
+            await db_session.execute(
+                """
+                UPDATE organizations
+                SET quota_utilized = quota_utilized + $1,
+                    utilized_email_identities = utilized_email_identities + $2
+                WHERE organization_id = $3 AND is_active = TRUE
+                """,
+                quota_allocated,
+                allocated_email_identities,
+                parent_organization_id
+            )
 
     except Exception as e:
         logging.error(f"Error creating new organization: {e}", exc_info=True)
