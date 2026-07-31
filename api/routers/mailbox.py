@@ -74,7 +74,7 @@ async def domain_mailbox(data: CreateMailBoxForm, user: CurrentUser, PgDB: Postg
     )
 
     # Organization should have enough quota and Email Service should be enabled
-    org_info = await get_organization_details(db_session=PgDB, org_id=domain_info["managed_by"])
+    org_info = await get_organization_details(db_session=PgDB, organization_id=domain_info["managed_by"])
     if not org_info["email_service_enabled"]:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
