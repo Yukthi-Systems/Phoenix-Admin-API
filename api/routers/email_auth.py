@@ -55,15 +55,17 @@ async def user_email_auth_verify_email(organization_id: str, user_id: str, org_n
     """
     Generate OTP for E-Mail Authentication for a user
     """
-    await validate_permissions(
-        current_user_permissions=user.permissions,
-        basic_permissions=["user:view"],    # For verification, we don't need edit permissions
-        organization_level_permissions=["organization:view"],
-        current_user_organization_id=user.organization_id,
-        accessed_organization_id=organization_id,
-        user_id=user_id,
-        db=PgDB
-    )
+    # If its self verification, then we don't need to check for permissions
+    if user.user_id != user_id:
+        await validate_permissions(
+            current_user_permissions=user.permissions,
+            basic_permissions=["user:view"],    # For verification, we don't need edit permissions
+            organization_level_permissions=["organization:view"],
+            current_user_organization_id=user.organization_id,
+            accessed_organization_id=organization_id,
+            user_id=user_id,
+            db=PgDB
+        )
 
     otp_code = OTP_CODE_GENERATOR()
 
@@ -161,15 +163,17 @@ async def validate_email_otp(organization_id: str, user_id: str, otp_code: str, 
     """
     Validate OTP for E-Mail Authentication for a user
     """
-    await validate_permissions(
-        current_user_permissions=user.permissions,
-        basic_permissions=["user:view"],
-        organization_level_permissions=["organization:view"],
-        current_user_organization_id=user.organization_id,
-        accessed_organization_id=organization_id,
-        user_id=user_id,
-        db=PgDB
-    )
+    # If its self verification, then we don't need to check for permissions
+    if user.user_id != user_id:
+        await validate_permissions(
+            current_user_permissions=user.permissions,
+            basic_permissions=["user:view"],
+            organization_level_permissions=["organization:view"],
+            current_user_organization_id=user.organization_id,
+            accessed_organization_id=organization_id,
+            user_id=user_id,
+            db=PgDB
+        )
 
     cached_otp = await CacheDB.get(f"email_auth:otp:verify:{organization_id}:{user_id}".encode("utf-8"))
 
