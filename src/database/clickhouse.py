@@ -84,45 +84,80 @@ def _create_query_for_mail_flow_logs(
     from_email_id: str,
     to_email_ids: list[str],
     user_domain: str
-) -> str:
-    query = f"SELECT * FROM {CLICK_HOUSE_MAIL_FLOW_LOGS_TABLE} WHERE"
-    count_query = f"SELECT COUNT(*) FROM {CLICK_HOUSE_MAIL_FLOW_LOGS_TABLE} WHERE"
+) -> tuple[str, str, dict]:
+    """
+    Create parameterized queries for mail flow logs.
+    """
+    query = f"""
+        SELECT *
+        FROM {CLICK_HOUSE_MAIL_FLOW_LOGS_TABLE}
+        WHERE
+    """
+
+    count_query = f"""
+        SELECT COUNT(*)
+        FROM {CLICK_HOUSE_MAIL_FLOW_LOGS_TABLE}
+        WHERE
+    """
 
     where_clauses = [
-        f" log_timestamp BETWEEN toDateTime('{_convert_to_ist(from_date)}', 'Asia/Kolkata')",
-        f" AND toDateTime('{_convert_to_ist(to_date)}', 'Asia/Kolkata')"
-        f" AND has(email_domains, '{user_domain}')",
+        "log_timestamp BETWEEN "
+        "toDateTime({from_date:String}, 'Asia/Kolkata') "
+        "AND toDateTime({to_date:String}, 'Asia/Kolkata')",
+        "AND has(email_domains, {user_domain:String})"
     ]
 
+    parameters = {
+        "from_date": _convert_to_ist(from_date),
+        "to_date": _convert_to_ist(to_date),
+        "user_domain": user_domain,
+    }
+
     if euid:
-        where_clauses.append(f" AND euid = '{euid}'")
+        where_clauses.append("AND euid = {euid:String}")
+        parameters["euid"] = euid
 
     if subject:
-        where_clauses.append(f" AND subject LIKE '%{subject}%'")
-    
+        where_clauses.append("AND subject LIKE {subject:String}")
+        parameters["subject"] = f"%{subject}%"
+
     if log_type:
-        where_clauses.append(f" AND type = '{log_type}'")
+        where_clauses.append("AND type = {log_type:String}")
+        parameters["log_type"] = log_type
 
     if log_status:
-        where_clauses.append(f" AND status = '{log_status}'")
-    
+        where_clauses.append("AND status = {log_status:String}")
+        parameters["log_status"] = log_status
+
     if from_email_id:
-        where_clauses.append(f" AND from_email_id = '{from_email_id}'")
-    
+        where_clauses.append("AND from_email_id = {from_email_id:String}")
+        parameters["from_email_id"] = from_email_id
+
     if to_email_ids:
-        emails_list_str = ", ".join([f"'{email}'" for email in to_email_ids])
-        where_clauses.append(f" AND hasAny(to_email_ids, [{emails_list_str}])")
+        where_clauses.append(
+            "AND hasAny(to_email_ids, {to_email_ids:Array(String)})"
+        )
+        parameters["to_email_ids"] = to_email_ids
 
     # Combine all where clauses
-    where_statement = "".join(where_clauses)
+    where_statement = " ".join(where_clauses)
+
     query += where_statement
     count_query += where_statement
 
     # Add pagination for main query
     offset = (current_page - 1) * page_size
-    query += f" ORDER BY log_timestamp DESC LIMIT {page_size} OFFSET {offset}"
 
-    return query, count_query
+    query += """
+        ORDER BY log_timestamp DESC
+        LIMIT {page_size:UInt64}
+        OFFSET {offset:UInt64}
+    """
+
+    parameters["page_size"] = page_size
+    parameters["offset"] = offset
+
+    return query, count_query, parameters
 
 
 def get_mail_flow_logs(
@@ -149,7 +184,7 @@ def get_mail_flow_logs(
     )
 
     # Create the query
-    query, count_query = _create_query_for_mail_flow_logs(
+    query, count_query, parameters = _create_query_for_mail_flow_logs(
         current_page=current_page,
         page_size=page_size,
         from_date=from_date,
@@ -164,7 +199,7 @@ def get_mail_flow_logs(
     )
 
     # Get the total count of records
-    total_count_result = conn.query(count_query)
+    total_count_result = conn.query(count_query, parameters=parameters)
     total_count = total_count_result.result_rows[0][0] if total_count_result.result_rows else 0
     if total_count == 0:
         return {
@@ -176,7 +211,7 @@ def get_mail_flow_logs(
         }
 
     # Execute the query and fetch the results
-    result = conn.query(query)
+    result = conn.query(query, parameters=parameters)
     if not result.result_rows:
         return {
             "data": [],
@@ -211,38 +246,66 @@ def _create_query_for_audit_logs(
     user_id: str = None,
     message: str = None,
     action_type: str = None
-) -> str:
+) -> tuple[str, str, dict]:
     """
-    Create a query to fetch audit logs from ClickHouse
+    Create parameterized queries to fetch audit logs from ClickHouse.
     """
-    query = f"SELECT * FROM {CLICK_HOUSE_AUDIT_LOGS_TABLE} WHERE"
-    count_query = f"SELECT COUNT(*) FROM {CLICK_HOUSE_AUDIT_LOGS_TABLE} WHERE"
+    query = f"""
+        SELECT *
+        FROM {CLICK_HOUSE_AUDIT_LOGS_TABLE}
+        WHERE
+    """
+
+    count_query = f"""
+        SELECT COUNT(*)
+        FROM {CLICK_HOUSE_AUDIT_LOGS_TABLE}
+        WHERE
+    """
 
     where_clauses = [
-        f" organization_id = '{organization_id}'",
-        f" AND action_timestamp BETWEEN toDateTime('{_convert_to_ist(start_time)}', 'Asia/Kolkata')",
-        f" AND toDateTime('{_convert_to_ist(end_time)}', 'Asia/Kolkata')"
+        "organization_id = {organization_id:String}",
+        "AND action_timestamp BETWEEN "
+        "toDateTime({start_time:String}, 'Asia/Kolkata') "
+        "AND toDateTime({end_time:String}, 'Asia/Kolkata')"
     ]
 
+    parameters = {
+        "organization_id": organization_id,
+        "start_time": _convert_to_ist(start_time),
+        "end_time": _convert_to_ist(end_time),
+    }
+
     if user_id:
-        where_clauses.append(f" AND user_id = '{user_id}'")
+        where_clauses.append("AND user_id = {user_id:String}")
+        parameters["user_id"] = user_id
 
     if message:
-        where_clauses.append(f" AND message LIKE '%{message}%'")
+        where_clauses.append("AND message LIKE {message:String}")
+        parameters["message"] = f"%{message}%"
 
     if action_type:
-        where_clauses.append(f" AND action_type = '{action_type}'")
+        where_clauses.append("AND action_type = {action_type:String}")
+        parameters["action_type"] = action_type
 
     # Combine all where clauses
-    where_statement = "".join(where_clauses)
+    where_statement = " ".join(where_clauses)
+
     query += where_statement
     count_query += where_statement
 
     # Add pagination for main query
     offset = (current_page - 1) * page_size
-    query += f" ORDER BY action_timestamp DESC LIMIT {page_size} OFFSET {offset}"
 
-    return query, count_query
+    query += """
+        ORDER BY action_timestamp DESC
+        LIMIT {page_size:UInt64}
+        OFFSET {offset:UInt64}
+    """
+
+    parameters["page_size"] = page_size
+    parameters["offset"] = offset
+
+    return query, count_query, parameters
 
 
 def get_audit_logs(
@@ -266,7 +329,7 @@ def get_audit_logs(
     )
 
     # Create the query
-    query, count_query = _create_query_for_audit_logs(
+    query, count_query, parameters = _create_query_for_audit_logs(
         organization_id=organization_id,
         start_time=start_time,
         end_time=end_time,
@@ -278,7 +341,7 @@ def get_audit_logs(
     )
 
     # Get the total count of records
-    total_count_result = conn.query(count_query)
+    total_count_result = conn.query(count_query, parameters=parameters)
     total_count = total_count_result.result_rows[0][0] if total_count_result.result_rows else 0
     if total_count == 0:
         return {
@@ -290,7 +353,7 @@ def get_audit_logs(
         }
 
     # Execute the query and fetch the results
-    result = conn.query(query)
+    result = conn.query(query, parameters=parameters)
     if not result.result_rows:
         return {
             "data": [],
