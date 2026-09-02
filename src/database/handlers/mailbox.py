@@ -151,6 +151,61 @@ async def get_mailbox_details(db_session: PgSession, email: str) -> dict:
     }
 
 
+def _build_mailbox_search_queries(email_search: str, domain_name: str, page: int, size: int) -> tuple[str, list, str, list]:
+    """
+    Build parameterized count and search queries for mailboxes under a domain.
+    """
+    count_query = """
+        SELECT COUNT(*)
+        FROM mailboxes
+        WHERE domain_name = $1
+    """
+
+    search_query = """
+        SELECT email,
+               is_enabled,
+               quota_allocated,
+               quota_utilized_bytes,
+               total_messages_count
+        FROM mailboxes
+        WHERE domain_name = $1
+    """
+
+    count_params = [domain_name]
+    search_params = [domain_name]
+
+    if email_search:
+        count_query += " AND email ILIKE $2"
+        search_query += " AND email ILIKE $2"
+
+        email_pattern = f"%{email_search}%"
+
+        count_params.append(email_pattern)
+        search_params.append(email_pattern)
+
+        search_query += """
+            ORDER BY email ASC
+            LIMIT $3 OFFSET $4
+        """
+
+        search_params.extend([
+            size,
+            (page - 1) * size
+        ])
+    else:
+        search_query += """
+            ORDER BY email ASC
+            LIMIT $2 OFFSET $3
+        """
+
+        search_params.extend([
+            size,
+            (page - 1) * size
+        ])
+
+    return count_query, count_params, search_query, search_params
+
+
 async def get_all_mailboxes_under_domain(db_session: PgSession, email_search: str, domain_name: str, page: int, size: int) -> dict:
     """
     Get all mailboxes under a specific domain
@@ -163,27 +218,20 @@ async def get_all_mailboxes_under_domain(db_session: PgSession, email_search: st
         exception_message=f"Domain {domain_name} does not exist"
     )
 
-    count_query = "SELECT COUNT(*) FROM mailboxes WHERE domain_name = $1"
-    search_query = """
-    SELECT email, is_enabled, quota_allocated, quota_utilized_bytes, total_messages_count
-    FROM mailboxes
-    WHERE domain_name = $1
-    """
-
-    if email_search:
-        count_query += f" AND email ILIKE '%{email_search}%'"
-        search_query += f" AND email ILIKE '%{email_search}%'"
-
-    search_query += """
-    ORDER BY email ASC
-    LIMIT $2 OFFSET $3
-    """
+    count_query, count_params, search_query, search_params = (
+        _build_mailbox_search_queries(
+            email_search=email_search,
+            domain_name=domain_name,
+            page=page,
+            size=size
+        )
+    )
 
     try:
         # Fetch all mailboxes under the domain with pagination
         total_rows = await db_session.fetchval(
             count_query,
-            domain_name
+            *count_params
         )
 
         if total_rows == 0:
@@ -194,9 +242,7 @@ async def get_all_mailboxes_under_domain(db_session: PgSession, email_search: st
 
         rows = await db_session.fetch(
             search_query,
-            domain_name,
-            size,
-            (page - 1) * size
+            *search_params
         )
 
         mailboxes = [
@@ -605,12 +651,10 @@ async def get_mailboxes_under_server(db_session: PgSession, server_id: str, page
         # Prepare base query parts
         where_clause = "WHERE server_id = $1"
         params = [server_id]
-        param_idx = 2  # Next parameter index for SQL
 
         if email_starts_with:
-            where_clause += f" AND email ILIKE ${param_idx}"
+            where_clause += " AND email ILIKE $2"
             params.append(f"{email_starts_with}%")
-            param_idx += 1
 
         # Get total count
         total_rows = await db_session.fetchval(
@@ -628,12 +672,19 @@ async def get_mailboxes_under_server(db_session: PgSession, server_id: str, page
             }
 
         # Add LIMIT and OFFSET
+        if email_starts_with:
+            limit_param = "$3"
+            offset_param = "$4"
+        else:
+            limit_param = "$2"
+            offset_param = "$3"
+
         limit_offset_query = f"""
             SELECT email, is_enabled, quota_allocated, quota_utilized_bytes, is_locked, total_messages_count
             FROM mailboxes
             {where_clause}
             ORDER BY email DESC
-            LIMIT ${param_idx} OFFSET ${param_idx + 1}
+            LIMIT {limit_param} OFFSET {offset_param}
         """
         params.extend([size, (page - 1) * size])
 
