@@ -168,7 +168,7 @@ async def create_new_organization(
     utilized_email_identities: int,
     parent_organization_id: str,
     hierarchy_path: list[str]
-) -> None:
+) -> str:
     """
     Create a new organization in the database
     """
@@ -238,6 +238,9 @@ async def create_new_organization(
                 allocated_email_identities,
                 parent_organization_id
             )
+
+        # Return the newly created organization ID
+        return organization_id
 
     except Exception as e:
         logging.error(f"Error creating new organization: {e}", exc_info=True)

@@ -96,7 +96,7 @@ async def organization_create(data: CreateOrganizationForm, user: CurrentUser, P
     file_service_enabled = data.file_service_enabled if current_organization["file_service_enabled"] else False
 
     # Create a new organization
-    await create_new_organization(
+    new_org_id = await create_new_organization(
         db_session=PgDB,
         organization_name=data.name,
         organization_info=data.details,
@@ -114,7 +114,14 @@ async def organization_create(data: CreateOrganizationForm, user: CurrentUser, P
 
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
-        content={"message": "Organization created successfully"}
+        content={
+            "message": "Organization created successfully",
+            "data": {
+                "organization_id": new_org_id,
+                "organization_name": data.name,
+                "parent_organization_id": data.parent_organization_id
+            }
+        }
     )
 
 
