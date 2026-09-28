@@ -74,6 +74,8 @@ CREATE TABLE email_identities (
 
     first_name TEXT NOT NULL,
     last_name TEXT,
+    -- TODO: Add employee ID for the user
+    -- employee_id TEXT,  -- Employee ID for the user (can be empty if not applicable)
     primary_phone VARCHAR(20) NOT NULL, -- Used for 2FA/recovery/notifications
     secondary_email VARCHAR(254),   -- Used for 2FA/recovery/notifications
 
@@ -272,6 +274,12 @@ CREATE TABLE file_settings (
 
     is_file_versioning_enabled BOOLEAN DEFAULT FALSE NOT NULL,  -- Enable or disable file versioning
     is_sharing_enabled BOOLEAN DEFAULT FALSE NOT NULL,  -- Enable or disable file sharing
+
+    -- TODO: Implement file size limit, encryption, and allowed/blocked file extensions in the future
+    -- file_size_limit_mb INT NOT NULL DEFAULT 51200,    -- Maximum file size allowed (in MB) [Default: 50 GB = 50 x 1024 MB]
+    -- encryption_key BINARY(32),  -- 256-bit AES-GCM encryption key for file encryption (if not null, means encryption is enabled)
+    -- allowed_file_extensions TEXT[],  -- List of allowed file extensions (e.g., ['jpg', 'png', 'pdf'])
+    -- blocked_file_extensions TEXT[],  -- List of blocked file extensions (e.g., ['exe', 'bat'])
 
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
@@ -673,6 +681,65 @@ CREATE TABLE sso_sessions (
     -- When the user last authenticated using this SSO session
     last_auth_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+
+
+--------------------- ### VIEWS ### ---------------------
+
+
+-- Sogo View
+CREATE OR REPLACE VIEW sogo_view AS
+SELECT
+    ei.email AS c_uid,
+    d.domain_name AS domain,
+    ei.first_name AS c_cn,
+    ei.last_name AS c_name,
+    ei.email AS mail,
+    ei.password_hash_ssha1 AS c_password
+FROM mailboxes mb
+JOIN email_identities ei
+    ON mb.email = ei.email
+JOIN domains d
+    ON mb.domain_name = d.domain_name
+JOIN organizations o
+    ON d.managed_by = o.organization_id
+WHERE mb.is_enabled = TRUE
+    AND ei.is_enabled = TRUE
+    AND ei.is_password_expired = FALSE
+    AND d.is_active = TRUE
+    AND d.is_dns_txt_verified = TRUE
+    AND o.is_active = TRUE;
+
+
+-- Active Mailbox View
+CREATE OR REPLACE VIEW active_mailbox_view AS
+SELECT
+    ei.email,
+    d.domain_name,
+    ei.password_hash_ssha1,
+    mb.distribution_policy_id,
+    mb.quota_allocated,
+    s.server_id,
+    s.storage_path,
+    s.host_name
+FROM mailboxes AS mb
+JOIN email_identities AS ei
+    ON ei.email = mb.email
+   AND ei.domain_name = mb.domain_name
+JOIN domains AS d
+    ON d.domain_name = mb.domain_name
+JOIN organizations AS o
+    ON o.organization_id = d.managed_by
+JOIN servers AS s
+    ON s.server_id = mb.server_id
+WHERE
+    mb.is_enabled = TRUE
+    AND ei.is_enabled = TRUE
+    AND ei.is_password_expired = FALSE
+    AND d.is_active = TRUE
+    AND d.is_dns_txt_verified = TRUE
+    AND o.is_active = TRUE
+    AND s.is_active = TRUE
+    AND s.is_mailbox_server = TRUE;
 
 
 --------------------- ### INDEXES ### ---------------------
