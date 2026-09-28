@@ -172,7 +172,7 @@ async def organization_details(organization_id: str, user: CurrentUser, PgDB: Po
 
 
 @router.get("/list/{organization_id}", response_class=JSONResponse, tags=["Organization Management"], summary="Get All Organizations in Hierarchy Format")
-async def organization_list_hierarchy(organization_id: str, user: CurrentUser, PgDB: PostgresDep, page: int = 1, limit: int = 10) -> JSONResponse:
+async def organization_list_hierarchy(organization_id: str, user: CurrentUser, PgDB: PostgresDep, query_string: str = '', page: int = 1, limit: int = 10) -> JSONResponse:
     """
     Get all organizations in hierarchy format
     """
@@ -190,6 +190,7 @@ async def organization_list_hierarchy(organization_id: str, user: CurrentUser, P
     organizations_list = await get_organizations_list(
         db_session=PgDB,
         parent_organization_id=organization_id,
+        query_string=query_string,
         page=page,
         limit=limit
     )

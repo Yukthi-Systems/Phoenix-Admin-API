@@ -250,7 +250,7 @@ async def create_new_organization(
         )
 
 
-async def get_organizations_list(db_session: PgSession, parent_organization_id: str, page: int = 1, limit: int = 10) -> dict:
+async def get_organizations_list(db_session: PgSession, parent_organization_id: str, query_string: str = '', page: int = 1, limit: int = 10) -> dict:
     """
     Get a list of organizations under a specific parent organization
     """
@@ -269,14 +269,16 @@ async def get_organizations_list(db_session: PgSession, parent_organization_id: 
     )
 
     try:
-        # Get all the organizations where the parent organization ID is satisfied
+        # Get all the organizations where the parent organization ID is satisfied and match the query string
         total_count = await db_session.fetchval(
             """
             SELECT COUNT(*)
             FROM organizations
             WHERE parent_organization_id = $1
+            AND organization_name ILIKE '%' || $2 || '%'
             """,
-            parent_organization_id
+            parent_organization_id,
+            query_string
         )
         if total_count == 0:
             return {"total_count": 0, "organizations": [], "current_page": page, "total_pages": 0}
@@ -288,9 +290,11 @@ async def get_organizations_list(db_session: PgSession, parent_organization_id: 
             email_service_enabled, chat_service_enabled, file_service_enabled,
             quota_allocated, quota_utilized, created_at, allocated_email_identities
             FROM organizations WHERE parent_organization_id = $1
-            ORDER BY organization_name LIMIT $2 OFFSET $3
+            AND organization_name ILIKE '%' || $2 || '%'
+            ORDER BY organization_name LIMIT $3 OFFSET $4
             """,
             parent_organization_id,
+            query_string,
             limit,
             offset
         )
