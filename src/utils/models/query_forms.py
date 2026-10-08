@@ -131,6 +131,7 @@ class CreateOrganizationForm(BaseModel):
     email_service_enabled: bool = Field(..., title="Email Service Enabled", description="Enable or disable email service for the organization")
     chat_service_enabled: bool = Field(..., title="Chat Service Enabled", description="Enable or disable chat service for the organization")
     file_service_enabled: bool = Field(..., title="File Service Enabled", description="Enable or disable file service for the organization")
+    tasks_service_enabled: bool = Field(..., title="Tasks Service Enabled", description="Enable or disable tasks service for the organization")
     allocated_quota: float = Field(..., title="Allocated Quota", description="Size of the quota in GigaBytes, max size of the organization - quota_allocated")
     allocated_email_identities: int = Field(..., title="Allocated Email Identities", description="Total email identities allocated for the organization (-1 for unlimited)")
     parent_organization_id: str = Field(..., title="Parent Organization ID", description="ID of the parent organization")
@@ -160,6 +161,7 @@ class CreateOrganizationForm(BaseModel):
                 "email_service_enabled": True,
                 "chat_service_enabled": True,
                 "file_service_enabled": True,
+                "tasks_service_enabled": True,
                 "activate": True,
                 "allocated_quota": 1000,
                 "allocated_email_identities": 100,
@@ -1207,6 +1209,46 @@ class FilesUserCreateForm(BaseModel):
             "example": {
                 "email_identity": "john.doe@example.com",
                 "quota_allocated": 100.0,
+                "domain_name": "example.com",
+                "enable_user": True
+            }
+        }
+
+
+class TaskCalServiceConfigUpdateForm(BaseModel):
+    """
+    Update Task Calendar Service related configurations form for the endpoint
+    """
+    organization_id: str = Field(..., title="Organization ID", description="ID of the organization for which the task calendar service configurations are to be updated")
+    is_external_sharing_enabled: bool = Field(..., title="Enable External Sharing", description="Enable or disable external sharing in the task calendar service")
+
+    class Config:
+        """
+        Configuration for the model
+        """
+        json_schema_extra = {
+            "example": {
+                "organization_id": "Example-UUID",   # uuid.uuid5(uuid.NAMESPACE_DNS, 'Example')
+                "is_external_sharing_enabled": True
+            }
+        }
+
+
+class TaskCalUserCreateForm(BaseModel):
+    """
+    Create new Task Calendar user form for the endpoint
+    """
+    email_identity: str = Field(..., title="Email Identity", description="Email identity for the Task Calendar user")
+    domain_name: str = Field(..., title="Domain Name", description="Domain name for the Task Calendar user")
+    enable_user: bool = Field(..., title="Enable User", description="Enable or disable the Task Calendar user")
+
+    class Config:
+        """
+        Configuration for the model
+        """
+        json_schema_extra = {
+            "example": {
+                "email_identity": "john.doe@example.com",
                 "domain_name": "example.com",
                 "enable_user": True
             }

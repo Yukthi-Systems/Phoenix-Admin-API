@@ -120,7 +120,8 @@ async def get_organization_details(db_session: PgSession, organization_id: str) 
             SELECT
                 organization_name, organization_info, is_active, email_service_enabled,
                 chat_service_enabled, quota_allocated, quota_utilized, parent_organization_id,
-                hierarchy_path, file_service_enabled, allocated_email_identities, utilized_email_identities
+                hierarchy_path, file_service_enabled, tasks_service_enabled, allocated_email_identities,
+                utilized_email_identities
             FROM organizations WHERE organization_id = $1
             """,
             organization_id
@@ -139,6 +140,7 @@ async def get_organization_details(db_session: PgSession, organization_id: str) 
             "email_service_enabled": row["email_service_enabled"],
             "chat_service_enabled": row["chat_service_enabled"],
             "file_service_enabled": row["file_service_enabled"],
+            "tasks_service_enabled": row["tasks_service_enabled"],
             "quota_allocated": float(row["quota_allocated"]),
             "quota_utilized": float(row["quota_utilized"]),
             "allocated_email_identities": int(row["allocated_email_identities"]),
@@ -162,6 +164,7 @@ async def create_new_organization(
     email_service_enabled: bool,
     chat_service_enabled: bool,
     file_service_enabled: bool,
+    tasks_service_enabled: bool,
     quota_allocated: float,
     quota_utilized: float,
     allocated_email_identities: int,
@@ -205,9 +208,9 @@ async def create_new_organization(
         await db_session.execute(
             """
             INSERT INTO organizations (organization_id, organization_name, organization_info,
-            is_active, email_service_enabled, chat_service_enabled, file_service_enabled, quota_allocated, quota_utilized,
+            is_active, email_service_enabled, chat_service_enabled, file_service_enabled, tasks_service_enabled, quota_allocated, quota_utilized,
             allocated_email_identities, utilized_email_identities, parent_organization_id, hierarchy_path)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             """,
             organization_id,
             organization_name,
@@ -216,6 +219,7 @@ async def create_new_organization(
             email_service_enabled,
             chat_service_enabled,
             file_service_enabled,
+            tasks_service_enabled,
             quota_allocated,
             quota_utilized,
             allocated_email_identities,
@@ -287,7 +291,7 @@ async def get_organizations_list(db_session: PgSession, parent_organization_id: 
         rows = await db_session.fetch(
             """
             SELECT organization_id, organization_name, is_active, utilized_email_identities,
-            email_service_enabled, chat_service_enabled, file_service_enabled,
+            email_service_enabled, chat_service_enabled, file_service_enabled, tasks_service_enabled,
             quota_allocated, quota_utilized, created_at, allocated_email_identities
             FROM organizations WHERE parent_organization_id = $1
             AND organization_name ILIKE '%' || $2 || '%'
@@ -306,6 +310,7 @@ async def get_organizations_list(db_session: PgSession, parent_organization_id: 
                 "email_service_enabled": row["email_service_enabled"],
                 "chat_service_enabled": row["chat_service_enabled"],
                 "file_service_enabled": row["file_service_enabled"],
+                "tasks_service_enabled": row["tasks_service_enabled"],
                 "quota_allocated": float(row["quota_allocated"]),
                 "quota_utilized": float(row["quota_utilized"]),
                 "allocated_email_identities": int(row["allocated_email_identities"]),
@@ -335,7 +340,8 @@ async def edit_organization_details(
     organization_info: dict,
     email_service_enabled: bool,
     chat_service_enabled: bool,
-    file_service_enabled: bool
+    file_service_enabled: bool,
+    tasks_service_enabled: bool
 ) -> None:
     """
     Edit organization details
@@ -352,13 +358,14 @@ async def edit_organization_details(
         await db_session.execute(
             """
             UPDATE organizations
-            SET organization_info = $1, email_service_enabled = $2, chat_service_enabled = $3, file_service_enabled = $4
-            WHERE organization_id = $5
+            SET organization_info = $1, email_service_enabled = $2, chat_service_enabled = $3, file_service_enabled = $4, tasks_service_enabled = $5
+            WHERE organization_id = $6
             """,
             orjson.dumps(organization_info).decode("utf-8"),
             email_service_enabled,
             chat_service_enabled,
             file_service_enabled,
+            tasks_service_enabled,
             organization_id
         )
 
@@ -1391,6 +1398,100 @@ async def update_create_files_settings(
         logging.error(f"Error creating/updating file service settings: {e}", exc_info=True)
         raise All_Exceptions(
             message=f"Failed to create/update file service settings: {e}",
+            status_code=status.HTTP_424_FAILED_DEPENDENCY
+        )
+
+
+async def update_create_tasks_service_settings(
+    db_session: PgSession,
+    organization_id: str,
+    is_external_sharing_enabled: bool
+) -> None:
+    """
+    Update or create Tasks Calendar service settings for an organization
+    """
+    # Check if the organization exists
+    await _raise_check_organization_exists(
+        db_session=db_session,
+        organization_id=organization_id,
+        raise_exception_if_exists=False,
+        exception_message=f"Organization with ID {organization_id} does not exist"
+    )
+
+    try:
+        # Check if the tasks service settings already exist for the organization
+        existing_settings = await db_session.fetchrow(
+            "SELECT 1 FROM task_cal_settings WHERE organization_id = $1",
+            organization_id
+        )
+        if existing_settings:
+            # Update existing tasks service settings
+            await db_session.execute(
+                """
+                UPDATE task_cal_settings
+                SET is_external_sharing_enabled = $1,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE organization_id = $2
+                """,
+                is_external_sharing_enabled,
+                organization_id
+            )
+        else:
+            # Create new tasks service settings
+            await db_session.execute(
+                """
+                INSERT INTO task_cal_settings (organization_id, is_external_sharing_enabled)
+                VALUES ($1, $2)
+                """,
+                organization_id,
+                is_external_sharing_enabled
+            )
+
+    except Exception as e:
+        logging.error(f"Error creating/updating tasks service settings: {e}", exc_info=True)
+        raise All_Exceptions(
+            message=f"Failed to create/update tasks service settings: {e}",
+            status_code=status.HTTP_424_FAILED_DEPENDENCY
+        )
+
+
+async def get_tasks_settings_for_organization(db_session: PgSession, organization_id: str) -> dict:
+    """
+    Get tasks service settings for an organization
+    """
+    # Check if the organization exists
+    await _raise_check_organization_exists(
+        db_session=db_session,
+        organization_id=organization_id,
+        raise_exception_if_exists=False,
+        exception_message=f"Organization with ID {organization_id} does not exist"
+    )
+
+    try:
+        row = await db_session.fetchrow(
+            """
+            SELECT is_external_sharing_enabled, updated_at
+            FROM task_cal_settings
+            WHERE organization_id = $1
+            """,
+            organization_id
+        )
+        if not row:
+            raise All_Exceptions(
+                message=f"Tasks service settings for organization ID {organization_id} do not exist",
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+
+        return {
+            "organization_id": organization_id,
+            "is_external_sharing_enabled": row["is_external_sharing_enabled"],
+            "updated_at": row["updated_at"].isoformat()
+        }
+
+    except Exception as e:
+        logging.error(f"Error fetching tasks service settings: {e}", exc_info=True)
+        raise All_Exceptions(
+            message=f"Failed to fetch tasks service settings: {e}",
             status_code=status.HTTP_424_FAILED_DEPENDENCY
         )
 

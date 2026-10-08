@@ -24,6 +24,7 @@ from .generic import All_Exceptions, UserSession
 from .query_forms import (
     CreateGeneralPolicyListEntryForm,
     CreateFiltersPolicyListEntryForm,
+    TaskCalServiceConfigUpdateForm,
     AdminFilterSupportTicketsForm,
     CreateDistributionPolicyForm,
     FileServiceConfigUpdateForm,
@@ -36,6 +37,7 @@ from .query_forms import (
     CreateAttachmentPolicy,
     CreateOrganizationForm,
     UpdateMailBoxInfoForm,
+    TaskCalUserCreateForm,
     CreateRevisedInvoice,
     CreateDisclaimerForm,
     CreateDepartmentForm,
@@ -103,7 +105,9 @@ __annotations__ = {
     "ChatServiceConfigUpdateForm": "Chat Service related configurations update form for the endpoint",
     "CreateIdentity": "Create Identity form for the endpoint",
     "FileServiceConfigUpdateForm": "File Service related configurations update form for the endpoint",
-    "FilesUserCreateForm": "Create Files user form for the endpoint"
+    "FilesUserCreateForm": "Create Files user form for the endpoint",
+    "TaskCalServiceConfigUpdateForm": "Task Calendar Service related configurations update form for the endpoint",
+    "TaskCalUserCreateForm": "Create Task Calendar user form for the endpoint"
 }
 
 
@@ -145,5 +149,7 @@ __all__ = [
     "ChatServiceConfigUpdateForm",
     "CreateIdentity",
     "FileServiceConfigUpdateForm",
-    "FilesUserCreateForm"
+    "FilesUserCreateForm",
+    "TaskCalServiceConfigUpdateForm",
+    "TaskCalUserCreateForm"
 ]

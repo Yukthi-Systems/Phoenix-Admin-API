@@ -20,6 +20,7 @@
 | E-Mail Identities         | identity:view                           | identity:create           | identity:edit                           | identity:delete           |
 | E-Mail Identity Admin     | identity:admin:view                     |                           |                                         |                           |
 | File Service Config       | file:view                               | file:create               | file:edit                               | file:delete               |
+| Tasks (Calendar) Config   | tasks_calendar:view                     | tasks_calendar:create     | tasks_calendar:edit                     | tasks_calendar:delete     |
 
 
 | CRM                       | View                                    | Create                    | Edit                                    | Delete                    |
@@ -91,6 +92,14 @@ SET permissions = ARRAY[
     'api_keys:delete',
     'chat:view',
     'chat:edit',
+    'file:view',
+    'file:create',
+    'file:edit',
+    'file:delete',
+    'tasks_calendar:view',
+    'tasks_calendar:create',
+    'tasks_calendar:edit',
+    'tasks_calendar:delete',
 
     -- CRM
     'server:view',

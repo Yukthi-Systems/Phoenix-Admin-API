@@ -197,6 +197,8 @@ async def delete_identity_entry(domain_name: str, email_prefix: str, user: Curre
 
     # TODO: Delete the Files User and its associated data and make required API call for that too
 
+    # TODO: Also handle in the Phoenix-External-API repo too
+
     # Delete the E-Mail Identity entry from the database
     await delete_identity(
         db_session=PgDB,

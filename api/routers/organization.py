@@ -94,6 +94,7 @@ async def organization_create(data: CreateOrganizationForm, user: CurrentUser, P
     email_service_enabled = data.email_service_enabled if current_organization["email_service_enabled"] else False
     chat_service_enabled = data.chat_service_enabled if current_organization["chat_service_enabled"] else False
     file_service_enabled = data.file_service_enabled if current_organization["file_service_enabled"] else False
+    tasks_service_enabled = data.tasks_service_enabled if current_organization["tasks_service_enabled"] else False
 
     # Create a new organization
     new_org_id = await create_new_organization(
@@ -104,6 +105,7 @@ async def organization_create(data: CreateOrganizationForm, user: CurrentUser, P
         email_service_enabled=email_service_enabled,
         chat_service_enabled=chat_service_enabled,
         file_service_enabled=file_service_enabled,
+        tasks_service_enabled=tasks_service_enabled,
         quota_allocated=data.allocated_quota,
         quota_utilized=0.0,
         allocated_email_identities=data.allocated_email_identities,
@@ -203,7 +205,7 @@ async def organization_list_hierarchy(organization_id: str, user: CurrentUser, P
 
 # Edit Organization Information
 @router.patch("/edit/{organization_id}", response_class=JSONResponse, tags=["Organization Management"], summary="Edit Organization Information")
-async def organization_edit(organization_id: str, organization_info: dict, email_service_enabled: bool, chat_service_enabled: bool, file_service_enabled: bool, user: CurrentUser, PgDB: PostgresDep) -> JSONResponse:
+async def organization_edit(organization_id: str, organization_info: dict, email_service_enabled: bool, chat_service_enabled: bool, file_service_enabled: bool, tasks_service_enabled: bool, user: CurrentUser, PgDB: PostgresDep) -> JSONResponse:
     """
     Edit organization information
     """
@@ -217,7 +219,7 @@ async def organization_edit(organization_id: str, organization_info: dict, email
     await validate_permissions(
         current_user_permissions=user.permissions,
         basic_permissions=["organization:edit"],
-        organization_level_permissions=["organization:view"],
+        organization_level_permissions=["organization:view", "organization:edit"],
         current_user_organization_id=user.organization_id,
         accessed_organization_id=organization_id,
         user_id=None,
@@ -234,6 +236,7 @@ async def organization_edit(organization_id: str, organization_info: dict, email
     email_service_enabled = email_service_enabled if current_organization["email_service_enabled"] else False
     chat_service_enabled = chat_service_enabled if current_organization["chat_service_enabled"] else False
     file_service_enabled = file_service_enabled if current_organization["file_service_enabled"] else False
+    tasks_service_enabled = tasks_service_enabled if current_organization["tasks_service_enabled"] else False
 
     # Update organization information
     await edit_organization_details(
@@ -242,7 +245,8 @@ async def organization_edit(organization_id: str, organization_info: dict, email
         organization_info=organization_info,
         email_service_enabled=email_service_enabled,
         chat_service_enabled=chat_service_enabled,
-        file_service_enabled=file_service_enabled
+        file_service_enabled=file_service_enabled,
+        tasks_service_enabled=tasks_service_enabled
     )
 
     return JSONResponse(

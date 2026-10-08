@@ -638,7 +638,8 @@ async def update_domain_lock_status(
         await db_session.execute(
             """
             UPDATE domains
-            SET is_locked = FALSE
+            SET is_locked = FALSE,
+                locked_servers_group = NULL
             WHERE domain_name = $1
             """,
             domain_name

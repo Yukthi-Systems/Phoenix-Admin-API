@@ -38,7 +38,7 @@ from .routers import *
 app = FastAPI(
     title="V3 - Mail Service Portal API",
     description="Admin panel API for the V3 Mail Service Portal",
-    version="1.9.0-phoenix-release",
+    version="1.9.1-phoenix-release",
     # docs_url=None,
     # redoc_url=None,
     docs_url="/docs",
@@ -96,6 +96,7 @@ app.include_router(router=disclaimer_router, prefix="/disclaimer")
 app.include_router(router=department_router, prefix="/department")
 app.include_router(router=backup_code_router, prefix="/2fa/backup")
 app.include_router(router=maintenance_router, prefix="/maintenance")
+app.include_router(router=tasks_conf_router, prefix="/tasks-calendar")
 app.include_router(router=ticketing_router, prefix="/support/tickets")
 app.include_router(router=organization_router, prefix="/organization")
 app.include_router(router=email_identity_router, prefix="/identities")

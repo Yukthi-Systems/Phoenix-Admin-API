@@ -1451,6 +1451,57 @@ async def create_chat_user(db_session: PgSession, domain_name: str, email: str) 
         )
 
 
+async def list_all_tasks_users_under_domain(db_session: PgSession, domain_name: str, page: int, page_size: int) -> dict:
+    """
+    List all users who have used the tasks management feature under a specific domain with pagination
+    """
+    try:
+        total_count = await db_session.fetchval(
+            """
+            SELECT COUNT(*) FROM task_cal_users WHERE domain_name = $1
+            """,
+            domain_name
+        )
+        if total_count is None:
+            raise All_Exceptions(
+                message="Failed to fetch total count of tasks users",
+                status_code=status.HTTP_424_FAILED_DEPENDENCY
+            )
+
+        users = await db_session.fetch(
+            """
+            SELECT email, is_enabled, last_active_at FROM task_cal_users
+            WHERE domain_name = $1
+            ORDER BY last_active_at DESC
+            LIMIT $2 OFFSET $3
+            """,
+            domain_name,
+            page_size,
+            (page - 1) * page_size
+        )
+        return {
+            "current_page": page,
+            "page_size": page_size,
+            "has_more": (page * page_size) < total_count,
+            "total_count": total_count,
+            "total_pages": (total_count // page_size) + (1 if total_count % page_size > 0 else 0),
+            "data": [
+                {
+                    "email": user["email"],
+                    "is_enabled": user["is_enabled"],
+                    "last_active_at": user["last_active_at"].isoformat()
+                }
+                for user in users
+            ]
+        }
+
+    except Exception as e:
+        raise All_Exceptions(
+            message=f"Failed to list tasks users: {e}",
+            status_code=status.HTTP_424_FAILED_DEPENDENCY
+        )
+
+
 async def list_all_files_users_under_domain(db_session: PgSession, domain_name: str, page: int, page_size: int) -> dict:
     """
     List all users who have used the file management feature under a specific domain with pagination
@@ -1518,9 +1569,32 @@ async def toggle_file_user_status(db_session: PgSession, domain_name: str, email
             domain_name,
             email
         )
+
     except Exception as e:
         raise All_Exceptions(
             message=f"Failed to toggle file user status: {e}",
+            status_code=status.HTTP_424_FAILED_DEPENDENCY
+        )
+
+
+async def toggle_tasks_user_status(db_session: PgSession, domain_name: str, email: str) -> None:
+    """
+    Toggle the status (enabled/disabled) of a tasks user for a specific domain
+    """
+    try:
+        await db_session.execute(
+            """
+            UPDATE task_cal_users
+            SET is_enabled = NOT is_enabled
+            WHERE domain_name = $1 AND email = $2
+            """,
+            domain_name,
+            email
+        )
+
+    except Exception as e:
+        raise All_Exceptions(
+            message=f"Failed to toggle tasks user status: {e}",
             status_code=status.HTTP_424_FAILED_DEPENDENCY
         )
 
@@ -1566,6 +1640,56 @@ async def delete_file_user(db_session: PgSession, domain_name: str, email: str, 
     except Exception as e:
         raise All_Exceptions(
             message=f"Failed to delete file user: {e}",
+            status_code=status.HTTP_424_FAILED_DEPENDENCY
+        )
+
+
+async def delete_tasks_user(db_session: PgSession, domain_name: str, email: str) -> None:
+    """
+    Delete a tasks user for a specific domain
+    """
+    try:
+        await db_session.execute(
+            """
+            DELETE FROM task_cal_users
+            WHERE domain_name = $1 AND email = $2
+            """,
+            domain_name,
+            email
+        )
+
+        # No Update of anything is required
+
+    except Exception as e:
+        raise All_Exceptions(
+            message=f"Failed to delete tasks user: {e}",
+            status_code=status.HTTP_424_FAILED_DEPENDENCY
+        )
+
+
+async def create_tasks_user(
+    db_session: PgSession,
+    domain_name: str,
+    email: str,
+    is_enabled: bool
+) -> None:
+    """
+    Create a new tasks user for a specific domain
+    """
+    try:
+        await db_session.execute(
+            """
+            INSERT INTO task_cal_users (domain_name, email, is_enabled)
+            VALUES ($1, $2, $3)
+            """,
+            domain_name,
+            email,
+            is_enabled
+        )
+
+    except Exception as e:
+        raise All_Exceptions(
+            message=f"Failed to create tasks user: {e}",
             status_code=status.HTTP_424_FAILED_DEPENDENCY
         )
 

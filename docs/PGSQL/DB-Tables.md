@@ -28,6 +28,30 @@ CREATE TABLE users (
     UNIQUE (display_name, organization_id)  -- Unique display name per organization
 );
 
+-- Quota Pools and What we sell (Hierarchy)
+CREATE TABLE organizations (
+    organization_id UUID PRIMARY KEY,
+    organization_name VARCHAR(250) UNIQUE NOT NULL,
+    organization_info JSONB NOT NULL,  -- metadata, not indexed
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+
+    allocated_email_identities INT NOT NULL,  -- Total email identities allocated for the organization (-1 for unlimited)
+    utilized_email_identities INT NOT NULL,  -- Total email identities utilized for the organization
+
+    quota_allocated NUMERIC(10,2) NOT NULL,
+    quota_utilized NUMERIC(10,2) NOT NULL,
+
+    chat_service_enabled BOOLEAN DEFAULT FALSE NOT NULL,
+    email_service_enabled BOOLEAN DEFAULT FALSE NOT NULL,
+    file_service_enabled BOOLEAN DEFAULT FALSE NOT NULL,
+    tasks_service_enabled BOOLEAN DEFAULT FALSE NOT NULL,
+
+    parent_organization_id UUID REFERENCES organizations(organization_id) ON DELETE CASCADE NOT NULL,
+    hierarchy_path TEXT[] NOT NULL,       -- e.g., { 'org_name_1', 'org_name_2', 'org_name_3' }
+
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
 -- DOMAINS
 CREATE TABLE domains (
     domain_name VARCHAR(254) PRIMARY KEY,
@@ -116,29 +140,6 @@ CREATE TABLE mailboxes (
     quota_allocated NUMERIC(10,2) NOT NULL,
     quota_utilized_bytes BIGINT NOT NULL,
     total_messages_count BIGINT NOT NULL DEFAULT 0
-);
-
--- Quota Pools and What we sell (Hierarchy)
-CREATE TABLE organizations (
-    organization_id UUID PRIMARY KEY,
-    organization_name VARCHAR(250) UNIQUE NOT NULL,
-    organization_info JSONB NOT NULL,  -- metadata, not indexed
-    is_active BOOLEAN DEFAULT TRUE NOT NULL,
-
-    allocated_email_identities INT NOT NULL,  -- Total email identities allocated for the organization (-1 for unlimited)
-    utilized_email_identities INT NOT NULL,  -- Total email identities utilized for the organization
-
-    quota_allocated NUMERIC(10,2) NOT NULL,
-    quota_utilized NUMERIC(10,2) NOT NULL,
-
-    chat_service_enabled BOOLEAN DEFAULT FALSE NOT NULL,
-    email_service_enabled BOOLEAN DEFAULT FALSE NOT NULL,
-    file_service_enabled BOOLEAN DEFAULT FALSE NOT NULL,
-
-    parent_organization_id UUID REFERENCES organizations(organization_id) ON DELETE CASCADE NOT NULL,
-    hierarchy_path TEXT[] NOT NULL,       -- e.g., { 'org_name_1', 'org_name_2', 'org_name_3' }
-
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 -- MailBox Servers
@@ -293,6 +294,30 @@ CREATE TABLE file_users (
 
     quota_allocated NUMERIC(10,2) NOT NULL,
     quota_utilized NUMERIC(10,2) NOT NULL,
+
+    last_active_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+
+--------------------- ### Task (Calendar) Service Tables ### ---------------------
+
+
+-- Service Settings
+CREATE TABLE task_cal_settings (
+    organization_id UUID PRIMARY KEY REFERENCES organizations(organization_id) ON DELETE CASCADE,
+
+    is_external_sharing_enabled BOOLEAN DEFAULT FALSE NOT NULL,  -- Enable or disable external (views) sharing
+
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Users
+CREATE TABLE task_cal_users (
+    email VARCHAR(254) PRIMARY KEY REFERENCES email_identities(email) ON DELETE CASCADE,
+    domain_name VARCHAR(254) NOT NULL REFERENCES domains(domain_name) ON DELETE CASCADE,
+
+    is_enabled BOOLEAN DEFAULT TRUE NOT NULL,
 
     last_active_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
@@ -798,6 +823,7 @@ CREATE INDEX idx_invoices_invoice_id_trgm ON invoices USING GIN (invoice_id gin_
 CREATE INDEX idx_servers_host_name_trgm ON servers USING GIN (host_name gin_trgm_ops);
 CREATE INDEX idx_chat_users_domain_last_active ON chat_users (domain_name, last_active_at DESC);
 CREATE INDEX idx_file_users_domain_last_active ON file_users (domain_name, last_active_at DESC);
+CREATE INDEX idx_task_cal_users_domain_last_active ON task_cal_users (domain_name, last_active_at DESC);
 CREATE INDEX idx_mail25_app_sessions_domain_last_active ON mail25_app_sessions (domain_name, last_active_at DESC);
 CREATE INDEX idx_sso_sessions_domain_last_auth ON sso_sessions (domain_name, last_auth_at DESC);
 CREATE INDEX idx_cautions_org_updated ON cautions (organization_id, updated_at DESC);

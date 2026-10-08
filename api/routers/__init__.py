@@ -35,6 +35,7 @@ from .department import router as department_router
 from .phone_auth import router as phone_auth_router
 from .email_auth import router as email_auth_router
 from .files_conf import router as files_conf_router
+from .tasks_conf import router as tasks_conf_router
 from .ticketing import router as ticketing_router
 from .dashboard import router as dashboard_router
 from .imap_sync import router as imap_sync_router
@@ -50,7 +51,7 @@ from .crm import router as crm_router
 from .api import router as api_router
 
 
-__version__ = "v3.5.1-phoenix-release"
+__version__ = "v3.5.2-phoenix-release"
 
 
 __annotations__ = {
@@ -82,7 +83,8 @@ __annotations__ = {
     "imap_sync_router": "IMAP Sync related endpoints",
     "chat_router": "Chat related endpoints",
     "email_identity_router": "Email Identity related endpoints",
-    "files_conf_router": "Files Configuration related endpoints"
+    "files_conf_router": "Files Configuration related endpoints",
+    "tasks_conf_router": "Tasks Configuration related endpoints"
 }
 
 
@@ -114,5 +116,6 @@ __all__ = [
     "imap_sync_router",
     "chat_router",
     "email_identity_router",
-    "files_conf_router"
+    "files_conf_router",
+    "tasks_conf_router"
 ]

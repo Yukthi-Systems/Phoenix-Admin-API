@@ -103,6 +103,7 @@ from .handlers.totp import (
 from .handlers.user import (
     replace_user_permissions_template,
     list_all_files_users_under_domain,
+    list_all_tasks_users_under_domain,
     list_all_chat_users_under_domain,
     admin_fetch_all_support_tickets,
     get_user_template_permissions,
@@ -117,6 +118,7 @@ from .handlers.user import (
     admin_update_ticket_info,
     delete_maintenance_entry,
     replace_user_permissions,
+    toggle_tasks_user_status,
     update_maintenance_entry,
     get_hierarchy_users_list,
     create_maintenance_entry,
@@ -135,6 +137,8 @@ from .handlers.user import (
     replace_user_details,
     set_email_verified,
     set_phone_verified,
+    create_tasks_user,
+    delete_tasks_user,
     create_file_user,
     delete_file_user,
     delete_chat_user,
@@ -200,6 +204,8 @@ from .handlers.domain import (
 from .handlers.organization import (
     update_organization_activation_status,
     check_if_org_has_children_or_domains,
+    update_create_tasks_service_settings,
+    get_tasks_settings_for_organization,
     get_total_users_under_organization,
     get_file_settings_for_organization,
     update_organization_identity_quota,
@@ -466,7 +472,13 @@ __annotations__ = {
     "toggle_file_user_status": "Function to toggle the status of a file user in the database",
     "delete_file_user": "Function to delete a specific file user from the database",
     "create_file_user": "Function to create a new file user in the database",
-    "update_file_user_quota": "Function to update the quota of a file user in the database"
+    "update_file_user_quota": "Function to update the quota of a file user in the database",
+    "update_create_tasks_service_settings": "Function to update or create tasks service settings for a specific organization in the database",
+    "get_tasks_settings_for_organization": "Function to get tasks settings for a specific organization from the database",
+    "list_all_tasks_users_under_domain": "Function to list all tasks users under a specific domain from the database",
+    "toggle_tasks_user_status": "Function to toggle the status of a tasks user in the database",
+    "delete_tasks_user": "Function to delete a specific tasks user from the database",
+    "create_tasks_user": "Function to create a new tasks user in the database"
 }
 
 
@@ -698,5 +710,11 @@ __all__ = [
     "toggle_file_user_status",
     "delete_file_user",
     "update_file_user_quota",
-    "create_file_user"
+    "create_file_user",
+    "update_create_tasks_service_settings",
+    "get_tasks_settings_for_organization",
+    "list_all_tasks_users_under_domain",
+    "toggle_tasks_user_status",
+    "delete_tasks_user",
+    "create_tasks_user"
 ]
