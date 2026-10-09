@@ -254,7 +254,6 @@ async def create_tasks_user_for_domain(data: TaskCalUserCreateForm, user: Curren
     await create_tasks_user(
         db_session=PgDB,
         domain_name=data.domain_name,
-        organization_id=domain_info["managed_by"],
         email=data.email_identity,
         is_enabled=data.enable_user
     )
