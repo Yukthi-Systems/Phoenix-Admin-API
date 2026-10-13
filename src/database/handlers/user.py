@@ -1767,10 +1767,10 @@ async def update_file_user_quota(
         )
     
     # Calculate the difference between the new quota and the current quota
-    quota_difference = new_quota_allocated - row["quota_allocated"]
+    quota_difference = new_quota_allocated - float(row["quota_allocated"])
     
     # Check if its less than or equal to already utilized quota (if yes, then we cannot reduce the quota)
-    if new_quota_allocated <= row["quota_utilized"]:
+    if new_quota_allocated <= float(row["quota_utilized"]):
         raise All_Exceptions(
             message="New quota cannot be less than or equal to the already utilized quota",
             status_code=status.HTTP_400_BAD_REQUEST
