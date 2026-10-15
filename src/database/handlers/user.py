@@ -1435,20 +1435,20 @@ async def create_chat_user(db_session: PgSession, organization_id: str, domain_n
     """
     Create a new chat user for a specific domain
     """
-    try:
-        # Make sure the Org has settings configured before creating a chat user
-        org_settings_count = await db_session.fetchval(
-            """
-            SELECT COUNT(*) FROM chat_settings WHERE organization_id = $1
-            """,
-            organization_id
+    # Make sure the Org has settings configured before creating a chat user
+    org_settings_count = await db_session.fetchval(
+        """
+        SELECT COUNT(*) FROM chat_settings WHERE organization_id = $1
+        """,
+        organization_id
+    )
+    if org_settings_count == 0:
+        raise All_Exceptions(
+            message="Org settings are not configured for this organization",
+            status_code=status.HTTP_424_FAILED_DEPENDENCY
         )
-        if org_settings_count == 0:
-            raise All_Exceptions(
-                message="Org settings are not configured for this organization",
-                status_code=status.HTTP_424_FAILED_DEPENDENCY
-            )
 
+    try:
         await db_session.execute(
             """
             INSERT INTO chat_users (domain_name, email, is_enabled, last_active_at)
