@@ -291,7 +291,7 @@ async def create_chat_user_for_domain(domain_name: str, user_email: str, user: C
         )
 
     # Logic to create the chat user for the given domain
-    await create_chat_user(db_session=PgDB, domain_name=domain_name, email=user_email)
+    await create_chat_user(db_session=PgDB, organization_id=domain_info["managed_by"], domain_name=domain_name, email=user_email)
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
