@@ -944,9 +944,9 @@ async def get_organization_hierarchy_info(db_session: PgSession, domain_name: st
     # Get the organization related information for the domain
     domain_org_info = {
         "domain_name": row["domain_name"],
-        "organization_id": row["organization_id"],
+        "organization_id": str(row["organization_id"]),
         "organization_name": row["organization_name"],
-        "parent_organization_id": row["parent_organization_id"],
+        "parent_organization_id": str(row["parent_organization_id"]),
         "hierarchy_path": row["hierarchy_path"]
     }
 
@@ -966,7 +966,7 @@ async def get_organization_hierarchy_info(db_session: PgSession, domain_name: st
             WITH ORDINALITY AS hp(organization_id, path_position)
         JOIN organizations AS org
             ON org.organization_id = hp.organization_id::UUID
-        WHERE input_org.organization_id = $1
+        WHERE input_org.organization_id = $1::UUID
         ORDER BY hp.path_position
         """,
         domain_org_info["organization_id"]
@@ -974,9 +974,9 @@ async def get_organization_hierarchy_info(db_session: PgSession, domain_name: st
 
     domain_org_info["full_hierarchy"] = [
         {
-            "organization_id": row["organization_id"],
+            "organization_id": str(row["organization_id"]),
             "organization_name": row["organization_name"],
-            "parent_organization_id": row["parent_organization_id"],
+            "parent_organization_id": str(row["parent_organization_id"]),
             "is_active": row["is_active"],
             "organization_info": row["organization_info"],
             "path_position": row["path_position"]
