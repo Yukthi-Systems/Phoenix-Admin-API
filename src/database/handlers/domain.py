@@ -965,7 +965,7 @@ async def get_organization_hierarchy_info(db_session: PgSession, domain_name: st
             unnest(input_org.hierarchy_path)
             WITH ORDINALITY AS hp(organization_id, path_position)
         JOIN organizations AS org
-            ON org.organization_id = hp.organization_id
+            ON org.organization_id = hp.organization_id::UUID
         WHERE input_org.organization_id = $1
         ORDER BY hp.path_position
         """,
