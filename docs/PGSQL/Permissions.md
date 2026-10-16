@@ -19,6 +19,7 @@
 | Chat Service Config       | chat:view                               | chat:create               | chat:edit                               | chat:delete               |
 | E-Mail Identities         | identity:view                           | identity:create           | identity:edit                           | identity:delete           |
 | E-Mail Identity Admin     | identity:admin:view                     |                           |                                         |                           |
+| Domain Organization Admin | domain:admin:view                       |                           |                                         |                           |
 | File Service Config       | file:view                               | file:create               | file:edit                               | file:delete               |
 | Tasks (Calendar) Config   | tasks_calendar:view                     | tasks_calendar:create     | tasks_calendar:edit                     | tasks_calendar:delete     |
 
@@ -121,6 +122,7 @@ SET permissions = ARRAY[
     'crm:invoice:edit',
     'domain:migration:view',
     'domain:migration:create',
+    'domain:admin:view',
     'support_ticket:view',
     'support_ticket:create',
     'support_ticket:edit',
@@ -183,10 +185,7 @@ SET permissions = ARRAY[
 -- Update permissions for the users table
 UPDATE users
 SET permissions = permissions || ARRAY[
-    'file:view',
-    'file:create',
-    'file:edit',
-    'file:delete'
+    'domain:admin:view'
 ]
 
 -- Update only one user by adding a WHERE clause
