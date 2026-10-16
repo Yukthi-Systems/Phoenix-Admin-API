@@ -31,6 +31,7 @@ from src.database import (
     check_if_domain_has_associated_identities,
     update_domain_txt_verification_status,
     migrate_domain_to_new_organization,
+    get_organization_hierarchy_info,
     update_domain_activation_status,
     get_all_domains_by_organization,
     delete_domain_and_update_quota,
@@ -434,4 +435,36 @@ async def dns_list(domain_name: str, user: CurrentUser, PgDB: PostgresDep) -> JS
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"message": "DNS records fetched successfully", "dns_records": dns_records}
+    )
+
+
+# Look up domain to organization information
+@router.get("/lookup/{domain_name}", response_class=JSONResponse, tags=["Domain Management"], summary="Look up domain to organization information")
+async def domain_lookup(user: CurrentUser, domain_name: str, PgDB: PostgresDep) -> JSONResponse:
+    """
+    Look up the organization hierarchy information for a given domain
+    """
+    domain_details = await get_domain_details(db_session=PgDB, domain_name=domain_name)
+
+    await validate_permissions(
+        current_user_permissions=user.permissions,
+        basic_permissions=["domain:admin:view"],
+        organization_level_permissions=["organization:view"],
+        current_user_organization_id=user.organization_id,
+        accessed_organization_id=domain_details["managed_by"],
+        user_id=None,
+        db=PgDB
+    )
+
+    hierarchy_details = await get_organization_hierarchy_info(
+        db_session=PgDB,
+        domain_name=domain_name
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "message": "Domain lookup successful",
+            "organization_details": hierarchy_details
+        }
     )

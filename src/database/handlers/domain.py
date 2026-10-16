@@ -913,3 +913,75 @@ async def check_if_domain_has_associated_identities(db_session: PgSession, domai
             message=f"Error checking associated identities for domain {domain_name}: {e}",
             status_code=status.HTTP_410_GONE
         )
+
+
+async def get_organization_hierarchy_info(db_session: PgSession, domain_name: str) -> dict:
+    """
+    Get all domains by organization
+    """
+    row = await db_session.fetchrow(
+        """
+        SELECT
+            d.domain_name,
+            d.managed_by AS organization_id,
+            o.organization_name,
+            o.parent_organization_id,
+            o.hierarchy_path
+        FROM domains AS d
+        JOIN organizations AS o
+            ON o.organization_id = d.managed_by
+        WHERE d.domain_name = $1
+        """,
+        domain_name
+    )
+
+    if not row:
+        raise All_Exceptions(
+            message=f"No organization hierarchy info found for domain {domain_name}",
+            status_code=status.HTTP_404_NOT_FOUND
+        )
+
+    # Get the organization related information for the domain
+    domain_org_info = {
+        "domain_name": row["domain_name"],
+        "organization_id": row["organization_id"],
+        "organization_name": row["organization_name"],
+        "parent_organization_id": row["parent_organization_id"],
+        "hierarchy_path": row["hierarchy_path"]
+    }
+
+    # Now get the full hierarchy of the organization
+    rows = await db_session.fetch(
+        """
+        SELECT
+            org.organization_id,
+            org.organization_name,
+            org.parent_organization_id,
+            org.is_active,
+            org.organization_info,
+            hp.path_position
+        FROM organizations AS input_org
+        CROSS JOIN LATERAL
+            unnest(input_org.hierarchy_path)
+            WITH ORDINALITY AS hp(organization_id, path_position)
+        JOIN organizations AS org
+            ON org.organization_id = hp.organization_id
+        WHERE input_org.organization_id = $1
+        ORDER BY hp.path_position
+        """,
+        domain_org_info["organization_id"]
+    )
+
+    domain_org_info["full_hierarchy"] = [
+        {
+            "organization_id": row["organization_id"],
+            "organization_name": row["organization_name"],
+            "parent_organization_id": row["parent_organization_id"],
+            "is_active": row["is_active"],
+            "organization_info": row["organization_info"],
+            "path_position": row["path_position"]
+        }
+        for row in rows
+    ]
+
+    return domain_org_info

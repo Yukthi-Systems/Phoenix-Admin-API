@@ -191,6 +191,7 @@ from .handlers.domain import (
     get_all_domains_under_organization,
     migrate_domain_to_new_organization,
     check_domain_organization_mapping,
+    get_organization_hierarchy_info,
     get_all_domains_by_organization,
     update_domain_activation_status,
     delete_domain_and_update_quota,
@@ -478,7 +479,8 @@ __annotations__ = {
     "list_all_tasks_users_under_domain": "Function to list all tasks users under a specific domain from the database",
     "toggle_tasks_user_status": "Function to toggle the status of a tasks user in the database",
     "delete_tasks_user": "Function to delete a specific tasks user from the database",
-    "create_tasks_user": "Function to create a new tasks user in the database"
+    "create_tasks_user": "Function to create a new tasks user in the database",
+    "get_organization_hierarchy_info": "Function to get the organization hierarchy information for a given domain from the database"
 }
 
 
@@ -716,5 +718,6 @@ __all__ = [
     "list_all_tasks_users_under_domain",
     "toggle_tasks_user_status",
     "delete_tasks_user",
-    "create_tasks_user"
+    "create_tasks_user",
+    "get_organization_hierarchy_info"
 ]
