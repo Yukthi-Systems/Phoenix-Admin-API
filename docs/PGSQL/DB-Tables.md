@@ -93,6 +93,8 @@ CREATE TABLE domains (
 
 -- E-Mail ID's - Users
 CREATE TABLE email_identities (
+    -- TODO: Add identity ID for the email identity
+    -- identity_id UUID UNIQUE NOT NULL,
     email VARCHAR(254) PRIMARY KEY,
     domain_name VARCHAR(254) NOT NULL REFERENCES domains(domain_name) ON DELETE CASCADE,
 
@@ -102,6 +104,7 @@ CREATE TABLE email_identities (
     -- employee_id TEXT,  -- Employee ID for the user (can be empty if not applicable)
     primary_phone VARCHAR(20) NOT NULL, -- Used for 2FA/recovery/notifications
     secondary_email VARCHAR(254),   -- Used for 2FA/recovery/notifications
+    mail25_app_info JSONB NOT NULL DEFAULT '{}'::JSONB, -- Simple JSONB storage for Mail25 app-related information
 
     password_hash_ssha1 TEXT NOT NULL,
     password_bcrypt TEXT NOT NULL,
@@ -446,10 +449,13 @@ CREATE TABLE cautions (
 -- Time Based One-Time Passwords (TOTP) for 2FA
 CREATE TABLE totp (
     totp_id UUID PRIMARY KEY,
-    totp_name VARCHAR(100) NOT NULL,  -- e.g., 'My Office Phone'
     user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+
+    totp_name VARCHAR(100) NOT NULL,  -- e.g., 'My Office Phone'
     totp_secret TEXT NOT NULL,  -- Base32 encoded secret for TOTP
+
     is_active BOOLEAN DEFAULT TRUE NOT NULL,
+
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE (user_id, totp_name)
 );
