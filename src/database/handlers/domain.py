@@ -926,6 +926,8 @@ async def get_organization_hierarchy_info(db_session: PgSession, domain_name: st
             d.managed_by AS organization_id,
             o.organization_name,
             o.parent_organization_id,
+            o.is_active,
+            o.organization_info,
             o.hierarchy_path
         FROM domains AS d
         JOIN organizations AS o
@@ -947,6 +949,8 @@ async def get_organization_hierarchy_info(db_session: PgSession, domain_name: st
         "organization_id": str(row["organization_id"]),
         "organization_name": row["organization_name"],
         "parent_organization_id": str(row["parent_organization_id"]),
+        "is_active": row["is_active"],
+        "organization_info": row["organization_info"],
         "hierarchy_path": row["hierarchy_path"]
     }
 
