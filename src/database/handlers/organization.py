@@ -887,7 +887,7 @@ async def get_api_keys_by_organization(db_session: PgSession, organization_id: s
         offset = (page - 1) * limit
         rows = await db_session.fetch(
             """
-            SELECT key_id, api_key, key_name, permissions, is_active, created_at, updated_at
+            SELECT key_id, api_key, key_name, permissions, is_active, created_at, updated_at, expired_at
             FROM api_keys
             WHERE organization_id = $1
             ORDER BY created_at DESC
@@ -905,7 +905,8 @@ async def get_api_keys_by_organization(db_session: PgSession, organization_id: s
                 "permissions": row["permissions"],
                 "is_active": row["is_active"],
                 "created_at": row["created_at"].isoformat(),
-                "updated_at": row["updated_at"].isoformat()
+                "updated_at": row["updated_at"].isoformat(),
+                "expired_at": row["expired_at"].isoformat()
             }
             for row in rows
         ]
@@ -939,7 +940,7 @@ async def get_api_key_details(db_session: PgSession, api_key_id: int, organizati
     try:
         row = await db_session.fetchrow(
             """
-            SELECT key_id, api_key, key_name, permissions, details, is_active, created_at, updated_at
+            SELECT key_id, api_key, key_name, permissions, details, is_active, created_at, updated_at, expired_at
             FROM api_keys
             WHERE key_id = $1 AND organization_id = $2
             """,
@@ -960,7 +961,8 @@ async def get_api_key_details(db_session: PgSession, api_key_id: int, organizati
             "details": orjson.loads(row["details"]),
             "is_active": row["is_active"],
             "created_at": row["created_at"].isoformat(),
-            "updated_at": row["updated_at"].isoformat()
+            "updated_at": row["updated_at"].isoformat(),
+            "expired_at": row["expired_at"].isoformat()
         }
     
     except Exception as e:
@@ -1056,7 +1058,8 @@ async def create_api_key(
     organization_id: str,
     key_name: str,
     permissions: list[str],
-    details: dict
+    details: dict,
+    expired_at: str
 ) -> str:
     """
     Create a new API key for an organization
@@ -1074,14 +1077,15 @@ async def create_api_key(
     try:
         await db_session.execute(
             """
-            INSERT INTO api_keys (api_key, organization_id, key_name, permissions, details, is_active)
-            VALUES ($1, $2, $3, $4, $5, TRUE)
+            INSERT INTO api_keys (api_key, organization_id, key_name, permissions, details, expired_at, is_active)
+            VALUES ($1, $2, $3, $4, $5, $6, TRUE)
             """,
             api_key,
             organization_id,
             key_name,
             permissions,
-            orjson.dumps(details).decode("utf-8")
+            orjson.dumps(details).decode("utf-8"),
+            expired_at
         )
 
         return api_key

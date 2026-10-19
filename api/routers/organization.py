@@ -636,7 +636,8 @@ async def organization_api_key_create(organization_id: str, data: CreateAPIKeyFo
         organization_id=organization_id,
         key_name=data.key_name,
         permissions=data.permissions,
-        details=data.details
+        details=data.details,
+        expired_at=data.expired_at
     )
 
     return JSONResponse(

@@ -1008,6 +1008,7 @@ class CreateAPIKeyForm(BaseModel):
     key_name: str = Field(..., title="Key Name", description="Name of the API key")
     details: dict = Field(..., title="Key Description", description="Description of the API key")
     permissions: List[str] = Field(..., title="Permissions", description="List of permissions associated with the API key")
+    expired_at: str = Field(..., title="Expired At", description="Expiration date and time of the API key")
 
     class Config:
         """
@@ -1021,7 +1022,8 @@ class CreateAPIKeyForm(BaseModel):
                     "created_by": "Example",
                     "Other info": "Any other info can be added here"
                 },
-                "permissions": ["read_users", "write_users", "read_domains"]
+                "permissions": ["read_users", "write_users", "read_domains"],
+                "expired_at": "2024-12-31T23:59:59Z"    # ISO 8601 format for date and time
             }
         }
 
