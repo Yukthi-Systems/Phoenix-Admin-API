@@ -85,7 +85,7 @@ async def get_identity_info(db_session: PgSession, email: str) -> dict:
             SELECT email, domain_name, first_name, last_name, primary_phone, secondary_email,
                    is_app_2fa_enabled, is_sms_2fa_enabled, is_email_2fa_enabled,
                    is_password_expired, is_enabled, password_updated_at, department_id,
-                   created_at, updated_at, restriction_policy_id
+                   created_at, updated_at, restriction_policy_id, employee_id
             FROM email_identities
             WHERE email = $1
             """,
@@ -103,6 +103,7 @@ async def get_identity_info(db_session: PgSession, email: str) -> dict:
             "domain_name": result["domain_name"],
             "first_name": result["first_name"],
             "last_name": result["last_name"],
+            "employee_id": result["employee_id"],
             "primary_phone": result["primary_phone"],
             "secondary_email": result["secondary_email"],
             "is_app_2fa_enabled": result["is_app_2fa_enabled"],
@@ -130,6 +131,7 @@ async def create_new_identity_entry(
     domain_name: str,
     first_name: str,
     last_name: str,
+    employee_id: str | None,
     primary_phone: str,
     secondary_email: str,
     base64_encoded_password: str,
@@ -148,17 +150,18 @@ async def create_new_identity_entry(
         await db_session.execute(
             """
             INSERT INTO email_identities (
-                email, domain_name, first_name, last_name, primary_phone, secondary_email,
-                password_hash_ssha1, password_bcrypt,
+                email, domain_name, first_name, last_name, employee_id, primary_phone,
+                secondary_email, password_hash_ssha1, password_bcrypt,
                 is_app_2fa_enabled, is_sms_2fa_enabled, is_email_2fa_enabled,
                 restriction_policy_id, department_id, is_enabled
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             """,
             email,
             domain_name,
             first_name,
             last_name,
+            employee_id,
             primary_phone,
             secondary_email,
             *_generate_password_hashs(base64.b64decode(base64_encoded_password)),
@@ -219,6 +222,7 @@ async def list_identities_under_domain(
                 ei.domain_name,
                 ei.first_name,
                 ei.last_name,
+                ei.employee_id,
                 ei.primary_phone,
                 ei.secondary_email,
 
@@ -278,6 +282,7 @@ async def list_identities_under_domain(
                 "domain_name": identity["domain_name"],
                 "first_name": identity["first_name"],
                 "last_name": identity["last_name"],
+                "employee_id": identity["employee_id"],
                 "primary_phone": identity["primary_phone"],
                 "secondary_email": identity["secondary_email"],
                 "is_app_2fa_enabled": identity["is_app_2fa_enabled"],
@@ -380,6 +385,7 @@ async def update_identity_details(
     email: str,
     first_name: str,
     last_name: str,
+    employee_id: str | None,
     primary_phone: str,
     secondary_email: str,
     is_app_2fa_enabled: bool,
@@ -396,12 +402,12 @@ async def update_identity_details(
         await db_session.execute(
             """
             UPDATE email_identities
-            SET first_name = $1, last_name = $2, primary_phone = $3, secondary_email = $4,
-                is_app_2fa_enabled = $5, is_sms_2fa_enabled = $6, is_email_2fa_enabled = $7,
-                restriction_policy_id = $8, department_id = $9, is_enabled = $10, updated_at = CURRENT_TIMESTAMP
-            WHERE email = $11
+            SET first_name = $1, last_name = $2, employee_id = $3, primary_phone = $4, secondary_email = $5,
+                is_app_2fa_enabled = $6, is_sms_2fa_enabled = $7, is_email_2fa_enabled = $8,
+                restriction_policy_id = $9, department_id = $10, is_enabled = $11, updated_at = CURRENT_TIMESTAMP
+            WHERE email = $12
             """,
-            first_name, last_name, primary_phone, secondary_email,
+            first_name, last_name, employee_id, primary_phone, secondary_email,
             is_app_2fa_enabled, is_sms_2fa_enabled, is_email_2fa_enabled,
             restriction_policy_id, department_id, is_enabled, email
         )

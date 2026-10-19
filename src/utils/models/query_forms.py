@@ -1263,6 +1263,7 @@ class CreateIdentity(BaseModel):
     email_domain: str = Field(..., title="Email Domain", description="Domain of the email ID for the identity")
     first_name: str = Field(..., title="First Name", description="First name of the identity")
     last_name: str = Field('', title="Last Name", description="Last name of the identity")
+    employee_id: Optional[str] = Field(None, title="Employee ID", description="Employee ID for the identity (can be empty if not applicable)")
     primary_phone_number: str = Field(..., title="Primary Phone Number", description="Primary phone number for the identity")
     secondary_email: str = Field('', title="Secondary Email", description="Secondary email ID for the identity")
     base64_password: str = Field(..., title="Password", description="Base64 encoded password for the identity")
@@ -1283,6 +1284,7 @@ class CreateIdentity(BaseModel):
                 "email_domain": "example.com",
                 "first_name": "John",
                 "last_name": "Doe",
+                "employee_id": "E12345",
                 "primary_phone_number": "+1234567890",
                 "secondary_email": "john.doe.secondary@example.com",
                 "base64_password": "Base64EncodedPassword==",

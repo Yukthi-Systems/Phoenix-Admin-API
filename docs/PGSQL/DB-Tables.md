@@ -100,8 +100,7 @@ CREATE TABLE email_identities (
 
     first_name TEXT NOT NULL,
     last_name TEXT,
-    -- TODO: Add employee ID for the user
-    -- employee_id TEXT,  -- Employee ID for the user (can be empty if not applicable)
+    employee_id TEXT,  -- Employee ID for the user (can be empty if not applicable)
     primary_phone VARCHAR(20) NOT NULL, -- Used for 2FA/recovery/notifications
     secondary_email VARCHAR(254),   -- Used for 2FA/recovery/notifications
     mail25_app_info JSONB NOT NULL DEFAULT '{}'::JSONB, -- Simple JSONB storage for Mail25 app-related information

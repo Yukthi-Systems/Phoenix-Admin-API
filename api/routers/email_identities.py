@@ -104,6 +104,7 @@ async def create_email_identity(data: CreateIdentity, user: CurrentUser, PgDB: P
         is_email_2fa_enabled=data.is_email_2fa_enabled,
         restriction_policy_id=data.restriction_policy_id,
         department_id=data.department_id,
+        employee_id=data.employee_id,
         is_enabled=data.is_enabled
     )
 
@@ -234,6 +235,7 @@ async def update_identity(data: CreateIdentity, user: CurrentUser, PgDB: Postgre
         email=f"{data.email_prefix}@{data.email_domain}".lower(),
         first_name=data.first_name,
         last_name=data.last_name,
+        employee_id=data.employee_id,
         primary_phone=data.primary_phone_number,
         secondary_email=data.secondary_email,
         is_app_2fa_enabled=data.is_app_2fa_enabled,
