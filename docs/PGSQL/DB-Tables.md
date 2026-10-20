@@ -163,11 +163,8 @@ CREATE TABLE servers (
     -- 2. Automated MailBox migration
     -- 3. Create new MailBox
 
-    -- TODO: Mark whether this server is an in-house server or not, if it is then only domains associated with this server should be considered in-house, all others should not stay in this server
-    -- is_on_prem BOOLEAN DEFAULT FALSE NOT NULL,  -- Is this server an in-house server or not
-
-    -- TODO: Remove the is_active field
-    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    is_on_prem BOOLEAN DEFAULT FALSE NOT NULL,  -- Is this server an in-house server or not
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,    -- Is this server currently active or not
 
     quota_allocated NUMERIC(10,2) NOT NULL,
     quota_utilized NUMERIC(10,2) NOT NULL,

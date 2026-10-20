@@ -36,6 +36,7 @@ async def create_new_server_entry(
     is_active: bool,
     is_monitoring: bool,
     is_mailbox_server: bool,
+    is_on_prem: bool,
     is_accepting_new_mailboxes: bool,
     quota_allocated: float,
     quota_utilized: float,
@@ -52,8 +53,8 @@ async def create_new_server_entry(
         await db_session.execute(
             """
             INSERT INTO servers (server_id, host_name, server_info, is_active,
-            smtp_port, quota_allocated, quota_utilized, storage_path, is_monitoring, is_mailbox_server, is_accepting_new_mailboxes)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            smtp_port, quota_allocated, quota_utilized, storage_path, is_monitoring, is_mailbox_server, is_on_prem, is_accepting_new_mailboxes)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             """,
             server_id,
             host_name,
@@ -65,6 +66,7 @@ async def create_new_server_entry(
             storage_path,
             is_monitoring,
             is_mailbox_server,
+            is_on_prem,
             is_accepting_new_mailboxes
         )
 
@@ -94,7 +96,7 @@ async def get_servers(db_session: PgSession, query: str = "", page: int = 1, pag
         servers = await db_session.fetch(
             """
             SELECT server_id, host_name, is_active, quota_allocated, is_accepting_new_mailboxes,
-            quota_utilized, created_at, is_monitoring, is_mailbox_server
+            quota_utilized, created_at, is_monitoring, is_mailbox_server, is_on_prem
             FROM servers
             WHERE host_name ILIKE '%' || $1 || '%'
             ORDER BY created_at DESC
@@ -113,6 +115,7 @@ async def get_servers(db_session: PgSession, query: str = "", page: int = 1, pag
                 "is_active": server["is_active"],
                 "is_monitoring": server["is_monitoring"],
                 "is_mailbox_server": server["is_mailbox_server"],
+                "is_on_prem": server["is_on_prem"],
                 "is_accepting_new_mailboxes": server["is_accepting_new_mailboxes"],
                 "quota_allocated": float(server["quota_allocated"]),
                 "quota_utilized": float(server["quota_utilized"]),
@@ -145,7 +148,7 @@ async def get_server_details(db_session: PgSession, server_id: str) -> dict:
         server = await db_session.fetchrow(
             """
             SELECT server_id, host_name, server_info, is_active, smtp_port, is_mailbox_server, is_accepting_new_mailboxes,
-                   quota_allocated, quota_utilized, storage_path, created_at, is_monitoring
+                   quota_allocated, quota_utilized, storage_path, created_at, is_monitoring, is_on_prem
             FROM servers
             WHERE server_id = $1
             """,
@@ -165,6 +168,7 @@ async def get_server_details(db_session: PgSession, server_id: str) -> dict:
             "server_info": orjson.loads(server["server_info"]),
             "is_active": server["is_active"],
             "is_mailbox_server": server["is_mailbox_server"],
+            "is_on_prem": server["is_on_prem"],
             "is_accepting_new_mailboxes": server["is_accepting_new_mailboxes"],
             "quota_allocated": float(server["quota_allocated"]),
             "quota_utilized": float(server["quota_utilized"]),
@@ -189,6 +193,7 @@ async def update_server_details(
     is_active: bool,
     is_monitoring: bool,
     is_mailbox_server: bool,
+    is_on_prem: bool,
     is_accepting_new_mailboxes: bool,
     quota_allocated: float,
     storage_path: str
@@ -231,8 +236,8 @@ async def update_server_details(
             """
             UPDATE servers
             SET server_info = $1, is_active = $2, smtp_port = $3, is_mailbox_server = $4,
-                is_accepting_new_mailboxes = $5, quota_allocated = $6, storage_path = $7, is_monitoring = $8
-            WHERE server_id = $9 AND is_active = TRUE
+                is_accepting_new_mailboxes = $5, quota_allocated = $6, storage_path = $7, is_monitoring = $8, is_on_prem = $9
+            WHERE server_id = $10 AND is_active = TRUE
             """,
             orjson.dumps(server_info).decode("utf-8"),
             is_active,
@@ -242,6 +247,7 @@ async def update_server_details(
             quota_allocated,
             storage_path,
             is_monitoring,
+            is_on_prem,
             server_id
         )
 

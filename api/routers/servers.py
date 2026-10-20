@@ -87,6 +87,7 @@ async def create_mailbox_server(data: CreateServerForm, user: CurrentUser, PgDB:
         is_active=data.is_active,
         is_monitoring=data.is_monitoring,
         is_mailbox_server=data.is_mailbox_server,
+        is_on_prem=data.is_on_prem,
         is_accepting_new_mailboxes=data.is_accepting_new_mailboxes,
         quota_allocated=data.quota_allocated,
         quota_utilized=0,  # Initially set to 0
@@ -197,6 +198,7 @@ async def edit_mailbox_server(server_id: str, data: CreateServerForm, user: Curr
         is_active=data.is_active,
         is_monitoring=data.is_monitoring,
         is_mailbox_server=data.is_mailbox_server,
+        is_on_prem=data.is_on_prem,
         is_accepting_new_mailboxes=data.is_accepting_new_mailboxes,
         quota_allocated=data.quota_allocated,
         storage_path=data.storage_path

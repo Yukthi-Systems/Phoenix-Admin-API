@@ -472,6 +472,7 @@ class CreateServerForm(BaseModel):
     is_active: bool = Field(..., title="Is Active", description="Is the server active or not")
     is_monitoring: bool = Field(..., title="Is Monitoring", description="Is the server under monitoring")
     is_mailbox_server: bool = Field(..., title="Is Mailbox Storage Server", description="Is the server used for mailbox storage")
+    is_on_prem: bool = Field(..., title="Is On-Prem", description="Is the server an in-house server or not")
     is_accepting_new_mailboxes: bool = Field(..., title="Is Accepting New Mailboxes", description="Is the server accepting new mailboxes")
     quota_allocated: float = Field(..., title="Allocated Quota", description="Size of the quota in GigaBytes, max size of the organization")
     storage_path: str = Field(..., title="Storage Path", description="Storage path for the server")
@@ -494,6 +495,7 @@ class CreateServerForm(BaseModel):
                 "is_active": True,
                 "is_monitoring": False,
                 "is_mailbox_server": False,
+                "is_on_prem": False,
                 "is_accepting_new_mailboxes": False,
                 "quota_allocated": 1000,    # Size of the quota in GigaBytes
                 "storage_path": "/data/vmail"
