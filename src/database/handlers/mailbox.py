@@ -654,7 +654,7 @@ async def get_mailboxes_under_server(db_session: PgSession, server_id: str, page
 
         if email_starts_with:
             where_clause += " AND email ILIKE $2"
-            params.append(f"{email_starts_with}%")
+            params.append(f"%{email_starts_with}%")
 
         # Get total count
         total_rows = await db_session.fetchval(
