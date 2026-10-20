@@ -1540,3 +1540,79 @@ async def get_file_settings_for_organization(db_session: PgSession, organization
             message=f"Failed to fetch file service settings: {e}",
             status_code=status.HTTP_424_FAILED_DEPENDENCY
         )
+
+
+async def get_global_organizations_list(db_session: PgSession, query_string: str = '', page: int = 1, limit: int = 10) -> dict:
+    """
+    Get the list of all global organizations with optional query string filtering and pagination.
+    """
+    try:
+        offset = (page - 1) * limit
+        total_count_row = await db_session.fetchrow(
+            """
+            SELECT COUNT(*)
+            FROM organizations
+            WHERE organization_name ILIKE $1
+            """,
+            f"%{query_string}%"
+        )
+        total_count = total_count_row["count"] if total_count_row else 0
+
+        if total_count == 0:
+            return {
+                "total_count": 0,
+                "page": page,
+                "limit": limit,
+                "organizations": []
+            }
+
+        rows = await db_session.fetch(
+            """
+            SELECT organization_id, organization_name, is_active, allocated_email_identities,
+            utilized_email_identities, quota_allocated, quota_utilized, chat_service_enabled,
+            email_service_enabled, file_service_enabled, tasks_service_enabled, parent_organization_id,
+            hierarchy_path, organization_info
+            FROM organizations
+            WHERE organization_name ILIKE $1
+            ORDER BY organization_name
+            OFFSET $2
+            LIMIT $3
+            """,
+            f"%{query_string}%",
+            offset,
+            limit
+        )
+
+        organizations = [
+            {
+                "organization_id": str(row["organization_id"]),
+                "organization_name": row["organization_name"],
+                "is_active": row["is_active"],
+                "allocated_email_identities": int(row["allocated_email_identities"]),
+                "utilized_email_identities": int(row["utilized_email_identities"]),
+                "quota_allocated": float(row["quota_allocated"]),
+                "quota_utilized": float(row["quota_utilized"]),
+                "chat_service_enabled": row["chat_service_enabled"],
+                "email_service_enabled": row["email_service_enabled"],
+                "file_service_enabled": row["file_service_enabled"],
+                "tasks_service_enabled": row["tasks_service_enabled"],
+                "parent_organization_id": str(row["parent_organization_id"]),
+                "hierarchy_path": row["hierarchy_path"],
+                "organization_info": row["organization_info"]
+            }
+            for row in rows
+        ]
+
+        return {
+            "total_count": total_count,
+            "page": page,
+            "limit": limit,
+            "organizations": organizations
+        }
+
+    except Exception as e:
+        logging.error(f"Error fetching global organizations list: {e}", exc_info=True)
+        raise All_Exceptions(
+            message=f"Failed to fetch global organizations list: {e}",
+            status_code=status.HTTP_424_FAILED_DEPENDENCY
+        )

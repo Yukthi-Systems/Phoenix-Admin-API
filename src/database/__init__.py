@@ -211,6 +211,7 @@ from .handlers.organization import (
     get_file_settings_for_organization,
     update_organization_identity_quota,
     get_chat_config_for_organization,
+    get_global_organizations_list,
     get_api_keys_by_organization,
     create_or_update_chat_config,
     update_create_files_settings,
@@ -480,7 +481,8 @@ __annotations__ = {
     "toggle_tasks_user_status": "Function to toggle the status of a tasks user in the database",
     "delete_tasks_user": "Function to delete a specific tasks user from the database",
     "create_tasks_user": "Function to create a new tasks user in the database",
-    "get_organization_hierarchy_info": "Function to get the organization hierarchy information for a given domain from the database"
+    "get_organization_hierarchy_info": "Function to get the organization hierarchy information for a given domain from the database",
+    "get_global_organizations_list": "Function to get the list of all global organizations from the database"
 }
 
 
@@ -719,5 +721,6 @@ __all__ = [
     "toggle_tasks_user_status",
     "delete_tasks_user",
     "create_tasks_user",
-    "get_organization_hierarchy_info"
+    "get_organization_hierarchy_info",
+    "get_global_organizations_list"
 ]

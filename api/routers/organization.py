@@ -34,6 +34,7 @@ from src.database import (
     update_organization_activation_status,
     check_if_org_has_children_or_domains,
     update_organization_identity_quota,
+    get_global_organizations_list,
     get_api_keys_by_organization,
     edit_organization_details,
     update_organization_quota,
@@ -676,4 +677,33 @@ async def organization_api_key_edit(organization_id: str, api_key_id: int, activ
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"message": "API Key updated successfully"}
+    )
+
+
+@router.get("/global-list", response_class=JSONResponse, tags=["Organization Management"], summary="Get Global List of Organizations")
+async def global_organization_list_hierarchy(user: CurrentUser, PgDB: PostgresDep, query_string: str = '', page: int = 1, limit: int = 10) -> JSONResponse:
+    """
+    Get all organizations in hierarchy format
+    """
+    await validate_permissions(
+        current_user_permissions=user.permissions,
+        basic_permissions=["organization:admin:view"],
+        organization_level_permissions=["organization:admin:view"],
+        current_user_organization_id=user.organization_id,
+        accessed_organization_id=None,
+        user_id=None,
+        db=PgDB
+    )
+
+    # Fetch all organizations in hierarchy format
+    organizations_list = await get_global_organizations_list(
+        db_session=PgDB,
+        query_string=query_string,
+        page=page,
+        limit=limit
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=organizations_list
     )
