@@ -10,6 +10,7 @@
 | Backup Codes              | user:security:backup_codes:view         |                           | user:security:backup_codes:edit         |                           |
 | Configure Phone SMS - 2FA |                                         |                           | user:security:2fa:sms_phone:edit        |                           |
 | Organization              | organization:view                       | organization:create       | organization:edit                       | organization:delete       |
+| Organization Admin        | organization:admin:view                 |                           |                                         |                           |
 | Configure TOTP - 2FA      | user:security:2fa:totp:view             |                           | user:security:2fa:totp:edit             |                           |
 | Email Client Sessions     | session:view                            |                           | session:edit                            | session:delete            |
 | Support Tickets User-end  | support_ticket:view                     | support_ticket:create     | support_ticket:edit                     |                           |
@@ -87,6 +88,7 @@ SET permissions = ARRAY[
     'organization:create',
     'organization:edit',
     'organization:delete',
+    'organization:admin:view',
     'api_keys:view',
     'api_keys:create',
     'api_keys:edit',
@@ -185,7 +187,7 @@ SET permissions = ARRAY[
 -- Update permissions for the users table
 UPDATE users
 SET permissions = permissions || ARRAY[
-    'domain:admin:view'
+    'organization:admin:view'
 ]
 
 -- Update only one user by adding a WHERE clause
