@@ -690,7 +690,7 @@ async def global_organization_list_hierarchy(user: CurrentUser, PgDB: PostgresDe
         basic_permissions=["organization:admin:view"],
         organization_level_permissions=["organization:admin:view"],
         current_user_organization_id=user.organization_id,
-        accessed_organization_id=None,
+        accessed_organization_id=user.organization_id,
         user_id=None,
         db=PgDB
     )
