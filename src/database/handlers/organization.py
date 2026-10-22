@@ -1078,7 +1078,7 @@ async def create_api_key(
         await db_session.execute(
             """
             INSERT INTO api_keys (api_key, organization_id, key_name, permissions, details, expired_at, is_active)
-            VALUES ($1, $2, $3, $4, $5, $6::TIMESTAMPTZ, TRUE)
+            VALUES ($1, $2, $3, $4, $5, CAST(CAST($6 AS TEXT) AS TIMESTAMPTZ), TRUE)
             """,
             api_key,
             organization_id,
