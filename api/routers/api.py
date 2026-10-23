@@ -40,11 +40,11 @@ async def get_api_version_info() -> JSONResponse:
         status_code=status.HTTP_200_OK,
         content={
             "api_name": "V3 - Mail Service Portal API",
-            "version": "1.8.1",
-            "version_full": "1.8.1-phoenix-release",
+            "version": "1.9.3",
+            "version_full": "1.9.3-phoenix-release",
             "code_name": "Phoenix Release",
             "description": "V3 - Advanced Mail Service Portal for Enterprise Solutions",
-            "updated_at": "2026-07-31T07:25:25.777777+05:30"
+            "updated_at": "2026-10-23T07:25:25.777777+05:30"
             # Run >>> from datetime import datetime; from zoneinfo import ZoneInfo; datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()
          }
     )

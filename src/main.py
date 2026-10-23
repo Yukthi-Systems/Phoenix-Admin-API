@@ -291,8 +291,7 @@ def get_s3_file(file_name: str, organization_id: str) -> bytes:
         return response['Body'].read()
 
     except s3.exceptions.NoSuchKey:
-        # TODO: Remove this kinds of errors too much clutter in the logs
-        raise All_Exceptions(message="File not found", status_code=status.HTTP_404_NOT_FOUND)
+        logging.warning(f"File {organization_id}/{file_name} not found in S3 bucket {S3_BUCKET_NAME}")
 
     except Exception as e:
         logging.error(f"Error while downloading file: {e}", exc_info=True)
@@ -318,11 +317,11 @@ def delete_s3_file(file_name: str, organization_id: str) -> None:
         s3.delete_object(Bucket=S3_BUCKET_NAME, Key=f"{organization_id}/{file_name}")
 
     except s3.exceptions.NoSuchKey:
-        raise All_Exceptions(message="File not found", status_code=status.HTTP_404_NOT_FOUND)
+        raise All_Exceptions(message="File not found to delete", status_code=status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
-        logging.error(f"Error while downloading file: {e}", exc_info=True)
-        raise All_Exceptions(message="Failed to download file", status_code=status.HTTP_410_GONE)
+        logging.error(f"Error while deleting file: {e}", exc_info=True)
+        raise All_Exceptions(message="Failed to delete file", status_code=status.HTTP_410_GONE)
 
 
 def assign_new_mailbox_server(email_id: str) -> None:
