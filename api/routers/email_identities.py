@@ -279,6 +279,20 @@ async def update_password_for_identity(data: dict, user: CurrentUser, PgDB: Post
         db=PgDB
     )
 
+    # Check if the email belongs to the specified domain
+    if not email.lower().endswith(f"@{domain_name}".lower()):
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"message": "Email does not belong to the specified domain"}
+        )
+
+    # Check if the password is breached
+    if check_password_breach(user_name=email, password=base64.b64decode(new_password).decode("utf-8")):
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"message": "The new password has been found in a breach database, choose a different password"}
+        )
+
     # Update the E-Mail Identity password in the database
     await update_identity_password(
         db_session=PgDB,

@@ -39,10 +39,10 @@ app = FastAPI(
     title="V3 - Mail Service Portal API",
     description="Admin panel API for the V3 Mail Service Portal",
     version="1.9.3-phoenix-release",
-    docs_url=None,
-    redoc_url=None,
-    # docs_url="/docs",
-    # redoc_url="/redoc",
+    # docs_url=None,
+    # redoc_url=None,
+    docs_url="/docs",
+    redoc_url="/redoc",
     include_in_schema=True,
     lifespan=lifespan
 )
