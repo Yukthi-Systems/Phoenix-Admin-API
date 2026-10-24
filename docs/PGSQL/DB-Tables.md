@@ -463,8 +463,10 @@ CREATE TABLE totp (
 CREATE TABLE backup_codes (
     code_id UUID PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+
     code VARCHAR(6) NOT NULL,  -- e.g., 'ABC123'
     is_used BOOLEAN DEFAULT FALSE NOT NULL,
+
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE (user_id, code)
 );
@@ -797,8 +799,6 @@ CREATE INDEX idx_email_identity_login ON email_identities(email) WHERE is_enable
 CREATE INDEX idx_server_active ON servers(server_id) WHERE is_active;
 CREATE INDEX idx_forwarding_policy_active ON forwarding_policies(policy_id) WHERE is_active;
 CREATE INDEX idx_mailboxes_domain_enabled ON mailboxes(domain_name) WHERE is_enabled;
-CREATE INDEX idx_mailbox_login ON mailboxes(email, server_id) WHERE is_enabled AND NOT is_locked;
-CREATE INDEX idx_mailbox_server_lookup ON mailboxes(server_id,email) WHERE is_enabled AND NOT is_locked;
 CREATE INDEX idx_domains_created ON domains(created_at);
 CREATE INDEX idx_mailbox_email_cover ON mailboxes(email) INCLUDE(server_id, forwarding_policy_id, distribution_policy_id, general_policy_id, domain_name) WHERE is_enabled;
 CREATE INDEX idx_mailboxes_server ON mailboxes(server_id);
