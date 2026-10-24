@@ -40,7 +40,7 @@ CMD ["chmod", "+x", "/app/entry_point.sh"]
 
 # Health check for the image
 HEALTHCHECK --interval=30s --timeout=7s --start-period=5s --retries=2 \
-    CMD ["sh", "-c", "curl --fail http://localhost:${GUNICORN_ARG_BIND_PORT}/docs || exit 1"]
+    CMD ["sh", "-c", "curl --fail http://localhost:${GUNICORN_ARG_BIND_PORT}/api/health || exit 1"]
 
 # Run the application using gunicorn
 ENTRYPOINT ["sh", "/app/entry_point.sh"]
