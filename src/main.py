@@ -1154,3 +1154,29 @@ async def validate_dns_txt_verification_key(domain_name: str, txt_record: str) -
     except Exception as e:
         logging.error(f"Error while validating DNS TXT record for domain {domain_name}: {e}", exc_info=True)
         return False
+
+
+def update_sso_password_by_api(email: str, new_raw_password: str) -> None:
+    """
+    Update the SSO password for the given email via API.
+    :param email: The email address for which the SSO password needs to be updated
+    :param new_raw_password: The new raw password to be set
+    :return: None
+    """
+    try:
+        response = requests.post(
+            f"{SSO_API_BASE_URL}/internal/password/reset",
+            json={
+                "email": email,
+                "new_raw_password": new_raw_password
+            },
+            headers={
+                "X-API-KEY": SSO_API_KEY,
+                "Content-Type": "application/json"
+            },
+            timeout=5
+        )
+        response.raise_for_status()
+
+    except Exception as e:
+        logging.error(f"Error updating SSO password for email {email}: {e}", exc_info=True)

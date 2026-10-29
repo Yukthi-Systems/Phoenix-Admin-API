@@ -20,7 +20,7 @@ version 3 along with this program. If not, see
 """
 
 
-from src.main import CurrentUser, validate_permissions, check_password_breach, validate_recaptcha, send_notification
+from src.main import CurrentUser, validate_permissions, check_password_breach, validate_recaptcha, send_notification, update_sso_password_by_api
 from src.utils.base.libraries import JSONResponse, APIRouter, status, base64, datetime, secrets
 from src.utils.models import CreateIdentity
 from src.database import (
@@ -300,6 +300,13 @@ async def update_password_for_identity(data: dict, user: CurrentUser, PgDB: Post
         new_base64_password=str(new_password)
     )
 
+    # Also update all the SSO passwords associated with this email identity
+    # Update the password via SSO API
+    update_sso_password_by_api(
+        email=str(email).lower(),
+        new_raw_password=base64.b64decode(new_password).decode("utf-8")
+    )
+
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"message": "E-Mail Identity password updated successfully", "email": str(email).lower()}
@@ -436,6 +443,12 @@ async def mailbox_password_reset(email_id: str, data: dict, CacheDB: MemcachedDe
         db_session=PgDB,
         email=email_id,
         new_base64_password=new_password_base64
+    )
+
+    # Update the password via SSO API
+    update_sso_password_by_api(
+        email=email_id,
+        new_raw_password=base64.b64decode(new_password_base64).decode("utf-8")
     )
 
     return JSONResponse(
