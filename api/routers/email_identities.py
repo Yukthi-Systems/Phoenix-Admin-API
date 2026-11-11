@@ -474,7 +474,7 @@ async def mailbox_password_reset(email_id: str, data: dict, CacheDB: MemcachedDe
 
 # Reset password using current password
 @router.post("/reset/current-password", response_class=JSONResponse, tags=["Identity Management"], summary="Reset password using current password")
-async def reset_using_current_password(data: dict, CacheDB: MemcachedDep, PgDB: PostgresDep) -> JSONResponse:
+async def reset_using_current_password(data: dict, PgDB: PostgresDep) -> JSONResponse:
     REQUIRED_FIELDS = ["email", "current_password_base64", "new_password_base64", "recaptcha_token"]
     for field in REQUIRED_FIELDS:
         if field not in data:
