@@ -29,6 +29,7 @@ from src.database import (
     get_organization_details,
     update_identity_password,
     update_identity_details,
+    get_identity_password,
     get_domain_details,
     get_identity_info,
     delete_identity,
@@ -469,6 +470,64 @@ async def mailbox_password_reset(email_id: str, data: dict, CacheDB: MemcachedDe
         status_code=status.HTTP_200_OK,
         content={"message": "Password has been reset successfully"}
     )
+
+
+# Reset password using current password
+@router.post("/reset/current-password", response_class=JSONResponse, tags=["Identity Management"], summary="Reset password using current password")
+async def reset_using_current_password(data: dict, CacheDB: MemcachedDep, PgDB: PostgresDep) -> JSONResponse:
+    REQUIRED_FIELDS = ["email", "current_password_base64", "new_password_base64", "recaptcha_token"]
+    for field in REQUIRED_FIELDS:
+        if field not in data:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"message": f"Missing required field: {field}"}
+            )
+
+    email = data["email"]
+    current_password_base64 = data["current_password_base64"]
+    new_password_base64 = data["new_password_base64"]
+    recaptcha_token = data["recaptcha_token"]
+
+    # Verify reCAPTCHA token
+    if not validate_recaptcha(token=recaptcha_token):
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"message": "reCAPTCHA validation failed, cannot initiate password reset"}
+        )
+
+    # Fetch the user password information from the database
+    identity_info = await get_identity_password(db_session=PgDB, email=email, current_password_base64=current_password_base64)
+    if not identity_info["is_ssha1_valid"]:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"message": "Current password is incorrect"}
+        )
+
+    # Check if password is breached
+    if check_password_breach(user_name=email, password=base64.b64decode(new_password_base64).decode("utf-8")):
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"message": "The password you are trying to set has been exposed in a data breach, please choose a different password to secure the account"}
+        )
+
+    # Update the password in the database
+    await update_identity_password(
+        db_session=PgDB,
+        email=email,
+        new_base64_password=new_password_base64
+    )
+
+    # Update the password via SSO API
+    update_sso_password_by_api(
+        email=email,
+        new_raw_password=base64.b64decode(new_password_base64).decode("utf-8")
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "Password has been reset successfully"}
+    )
+
 
 
 # TODO: enable/disable identity

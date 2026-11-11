@@ -28,8 +28,8 @@ from .handlers.caution import create_new_caution_entry, get_caution_details, lis
 from .handlers.department import create_new_department_entry, get_department_details, list_departments_under_organization, delete_department, update_department_details, export_departments_under_org
 from .handlers.server import create_new_server_entry, get_servers, get_server_details, update_server_details, delete_server_and_related_data, update_server_active_status, quota_recalculation_and_update
 from .handlers.filter_policy import create_filter_policy_entry, edit_filter_policy_entry, get_filter_policy_entries, delete_filter_policy_entry, get_filter_policy_entry_by_id, export_filter_policy_entries
-from .handlers.identities import get_identity_info, create_new_identity_entry, list_identities_under_domain, delete_identity, update_identity_details, update_identity_password, fetch_full_id_info_by_admin
 from .handlers.general_policy import create_general_policy_entry, edit_general_policy_entry, get_general_policy_entries, delete_general_policy_entry, get_general_policy_entry_by_id, export_general_policy_entries
+from .handlers.identities import get_identity_info, create_new_identity_entry, list_identities_under_domain, delete_identity, update_identity_details, update_identity_password, fetch_full_id_info_by_admin, get_identity_password
 from .handlers.restriction_policy import (
     get_restriction_policy_entry_by_id,
     export_restriction_policy_entries,
@@ -482,7 +482,8 @@ __annotations__ = {
     "delete_tasks_user": "Function to delete a specific tasks user from the database",
     "create_tasks_user": "Function to create a new tasks user in the database",
     "get_organization_hierarchy_info": "Function to get the organization hierarchy information for a given domain from the database",
-    "get_global_organizations_list": "Function to get the list of all global organizations from the database"
+    "get_global_organizations_list": "Function to get the list of all global organizations from the database",
+    "get_identity_password": "Function to fetch the password information for a specific email identity from the database"
 }
 
 
@@ -722,5 +723,6 @@ __all__ = [
     "delete_tasks_user",
     "create_tasks_user",
     "get_organization_hierarchy_info",
-    "get_global_organizations_list"
+    "get_global_organizations_list",
+    "get_identity_password"
 ]

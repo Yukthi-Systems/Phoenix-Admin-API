@@ -20,7 +20,7 @@ version 3 along with this program. If not, see
 """
 
 
-from src.utils.base.libraries import aiomcache, asyncpg, TypeAlias, status, uuid, orjson, os, hashlib, base64, bcrypt
+from src.utils.base.libraries import aiomcache, asyncpg, TypeAlias, status, uuid, orjson, os, hashlib, base64, bcrypt, hmac
 from src.utils.models import All_Exceptions
 
 
@@ -72,6 +72,32 @@ def _generate_password_hashs(raw_password: bytes) -> tuple[str, str]:
         f"{{SSHA}}{base64.b64encode(digest).decode('utf-8')}",  # SSHA hash
         bcrypt.hashpw(raw_password, bcrypt.gensalt()).decode('utf-8')  # Bcrypt hash
     )
+
+
+def _verify_ssha1_password(raw_password: bytes, stored_hash: str) -> bool:
+    """
+    Verify an SSHA1 password against the stored hash
+    Returns True if the password matches, False otherwise
+    """
+    if not stored_hash.startswith("{SSHA}"):
+        return False
+
+    try:
+        decoded = base64.b64decode(stored_hash[6:], validate=True)
+
+        if len(decoded) < 20:
+            return False
+
+        expected_digest = decoded[:20]
+        salt = decoded[20:]
+
+        sha1 = hashlib.sha1(raw_password)
+        sha1.update(salt)
+
+        return hmac.compare_digest(sha1.digest(), expected_digest)
+
+    except (ValueError, TypeError):
+        return False
 
 
 async def get_identity_info(db_session: PgSession, email: str) -> dict:
@@ -558,5 +584,49 @@ async def fetch_full_id_info_by_admin(email: str, db_session: PgSession) -> dict
     except Exception as e:
         raise All_Exceptions(
             message=f"Failed to fetch full identity information for email {email}: {e}",
+            status_code=status.HTTP_424_FAILED_DEPENDENCY
+        )
+
+
+async def get_identity_password(db_session: PgSession, email: str, current_password_base64: str) -> dict:
+    """
+    Fetch the password information for the given email identity from the database.
+
+    Args:
+        email (str): The email identity for which to fetch the password information.
+        db_session (PgSession): The database session to use for the query.
+        current_password_base64 (str): The current password in base64 encoding to verify against the stored password hash.
+
+    Returns:
+        dict: A dictionary containing the password information for the email identity.
+    """
+    try:
+        result = await db_session.fetchrow(
+            """
+            SELECT password_hash_ssha1, password_bcrypt
+            FROM email_identities WHERE email = $1 AND is_enabled = TRUE
+            """,
+            email
+        )
+        if result is None:
+            raise All_Exceptions(
+                message="Email identity not found",
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+
+        current_password_bytes = base64.b64decode(current_password_base64)
+        password_hash_ssha1 = result["password_hash_ssha1"]
+        password_bcrypt = result["password_bcrypt"]
+
+        return {
+            "email": email,
+            "password_hash_ssha1": password_hash_ssha1,
+            "password_bcrypt": password_bcrypt,
+            "is_ssha1_valid": _verify_ssha1_password(current_password_bytes, password_hash_ssha1)
+        }
+
+    except Exception as e:
+        raise All_Exceptions(
+            message=f"Failed to fetch password information for email {email}: {e}",
             status_code=status.HTTP_424_FAILED_DEPENDENCY
         )
