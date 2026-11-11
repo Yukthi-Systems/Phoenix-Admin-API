@@ -43,7 +43,7 @@ router = APIRouter()
 
 # OTP Constants
 OTP_CODE_GENERATOR = lambda: ''.join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(6))
-OTP_EXPIRY_TIME = 60 * 2  # 2 minutes expiry for OTP
+OTP_EXPIRY_TIME = 60 * 5  # 5 minutes expiry for OTP
 
 
 # Create a new E-Mail Identity under an Organization
