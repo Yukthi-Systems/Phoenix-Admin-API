@@ -376,6 +376,7 @@ async def mailbox_start_password_reset(email_id: str, verify_via: str, recaptcha
                 template_name="password_reset_link",
                 variables={
                     "name": user_name,
+                    "user_email": primary_email,
                     "secret": otp,
                     "year": datetime.now().year
                 }
