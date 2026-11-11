@@ -337,6 +337,7 @@ async def mailbox_start_password_reset(email_id: str, verify_via: str, recaptcha
     otp: str = OTP_CODE_GENERATOR()
     user_name: str = str(identity_info["last_name"] + " " + identity_info["first_name"]).strip()
     secondary_email: str = identity_info["secondary_email"]
+    primary_email: str = identity_info["email"]
     primary_phone: str = identity_info["primary_phone"]
 
     # There are two ways to verify the user - email or phone
@@ -366,10 +367,23 @@ async def mailbox_start_password_reset(email_id: str, verify_via: str, recaptcha
                 }
             )
 
+        # Initiate password reset via Email - Link sent to primary email
+        case "email_link":
+            send_notification(
+                notification_type="email",
+                to=primary_email,
+                template_name="password_reset_link",
+                variables={
+                    "name": user_name,
+                    "secret": otp,
+                    "year": datetime.now().year
+                }
+            )
+
         case _:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                content={"message": "Invalid verification method, must be either 'email' or 'phone'"}
+                content={"message": "Invalid verification method, must be either 'email', 'phone' or 'email_link'"}
             )
 
     await CacheDB.set(
@@ -402,10 +416,10 @@ async def mailbox_password_reset(email_id: str, data: dict, CacheDB: MemcachedDe
             content={"message": "New password is required to complete the password reset process"}
         )
 
-    if "verify_via" not in data or data["verify_via"] not in ["email", "phone"]:
+    if "verify_via" not in data or data["verify_via"] not in ["email", "phone", "email_link"]:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={"message": "Verification method is required to complete the password reset process and must be either 'email' or 'phone'"}
+            content={"message": "Verification method is required to complete the password reset process and must be either 'email' , 'phone' or 'email_link'"}
         )
 
     new_password_base64: str = data["new_password_base64"]
