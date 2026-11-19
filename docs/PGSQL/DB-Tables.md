@@ -94,8 +94,12 @@ CREATE TABLE domains (
 -- E-Mail ID's - Users
 CREATE TABLE email_identities (
     -- TODO: Add identity ID for the email identity
-    -- identity_id UUID UNIQUE NOT NULL,
-    email VARCHAR(254) PRIMARY KEY,
+    -- Step 1: ALTER TABLE email_identities ADD COLUMN identity_id UUID UNIQUE;
+    -- Step 2: Populate the identity_id by script
+    -- Step 3: Add a NOT NULL constraint to identity_id after populating it
+    -- Step 4: Change the primary key to identity_id instead of email
+    identity_id UUID PRIMARY KEY,
+    email VARCHAR(254) UNIQUE,
     domain_name VARCHAR(254) NOT NULL REFERENCES domains(domain_name) ON DELETE CASCADE,
 
     first_name TEXT NOT NULL,

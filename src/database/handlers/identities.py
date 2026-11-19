@@ -30,7 +30,8 @@ MemCacheSession: TypeAlias = aiomcache.Client
 
 # -- E-Mail ID's - Users
 # CREATE TABLE email_identities (
-#     email VARCHAR(254) PRIMARY KEY,
+#     identity_id UUID PRIMARY KEY,
+#     email VARCHAR(254) UNIQUE,
 #     domain_name VARCHAR(254) NOT NULL REFERENCES domains(domain_name) ON DELETE CASCADE,
 
 #     first_name TEXT NOT NULL,
@@ -108,7 +109,7 @@ async def get_identity_info(db_session: PgSession, email: str) -> dict:
         # Fetch the email identity details from the database
         result = await db_session.fetchrow(
             """
-            SELECT email, domain_name, first_name, last_name, primary_phone, secondary_email,
+            SELECT identity_id, email, domain_name, first_name, last_name, primary_phone, secondary_email,
                    is_app_2fa_enabled, is_sms_2fa_enabled, is_email_2fa_enabled,
                    is_password_expired, is_enabled, password_updated_at, department_id,
                    created_at, updated_at, restriction_policy_id, employee_id
@@ -125,6 +126,7 @@ async def get_identity_info(db_session: PgSession, email: str) -> dict:
 
         # Convert the result to a dictionary
         return {
+            "identity_id": str(result["identity_id"]),
             "email": result["email"],
             "domain_name": result["domain_name"],
             "first_name": result["first_name"],
@@ -172,17 +174,20 @@ async def create_new_identity_entry(
     Create a new email identity entry in the database
     """
     try:
+        identity_id = str(uuid.uuid4())
+
         # Insert the new email identity into the database
         await db_session.execute(
             """
             INSERT INTO email_identities (
-                email, domain_name, first_name, last_name, employee_id, primary_phone,
+                identity_id, email, domain_name, first_name, last_name, employee_id, primary_phone,
                 secondary_email, password_hash_ssha1, password_bcrypt,
                 is_app_2fa_enabled, is_sms_2fa_enabled, is_email_2fa_enabled,
                 restriction_policy_id, department_id, is_enabled
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             """,
+            identity_id,
             email,
             domain_name,
             first_name,
@@ -244,6 +249,7 @@ async def list_identities_under_domain(
         identities = await db_session.fetch(
             """
             SELECT
+                ei.identity_id,
                 ei.email,
                 ei.domain_name,
                 ei.first_name,
@@ -304,6 +310,7 @@ async def list_identities_under_domain(
         # Convert the result to a list of dictionaries
         identity_list = [
             {
+                "identity_id": str(identity["identity_id"]),
                 "email": identity["email"],
                 "domain_name": identity["domain_name"],
                 "first_name": identity["first_name"],
@@ -481,6 +488,7 @@ async def fetch_full_id_info_by_admin(email: str, db_session: PgSession) -> dict
             """
             SELECT
                 -- Identity
+                ei.identity_id,
                 ei.email,
                 ei.domain_name,
                 ei.first_name,
@@ -545,6 +553,7 @@ async def fetch_full_id_info_by_admin(email: str, db_session: PgSession) -> dict
             )
 
         return {
+            "identity_id": str(result["identity_id"]),
             "email": result["email"],
             "domain_name": result["domain_name"],
             "first_name": result["first_name"],
