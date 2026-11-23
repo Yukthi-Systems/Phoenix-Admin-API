@@ -20,7 +20,7 @@ version 3 along with this program. If not, see
 """
 
 
-from src.utils.models import FileServiceConfigUpdateForm, All_Exceptions, FilesUserCreateForm
+from src.utils.models import FileServiceConfigUpdateForm, All_Exceptions, FilesUserCreateForm, StorageQuotaQuery
 from src.utils.base.libraries import JSONResponse, APIRouter, status
 from src.main import CurrentUser, validate_permissions
 from src.database import (
@@ -272,7 +272,7 @@ async def create_files_user_for_domain(data: FilesUserCreateForm, user: CurrentU
 
 # Update a Files user for a domain
 @router.put("/user/{domain_name}/quota/{user_email}", response_class=JSONResponse, tags=["File Service"], description="Update a Files user's quota for a domain")
-async def update_files_user_quota_for_domain(domain_name: str, user_email: str, new_quota: float, user: CurrentUser, PgDB: PostgresDep) -> JSONResponse:
+async def update_files_user_quota_for_domain(domain_name: str, user_email: str, new_quota: StorageQuotaQuery, user: CurrentUser, PgDB: PostgresDep) -> JSONResponse:
     """
     Update a Files user's quota for a domain
     """

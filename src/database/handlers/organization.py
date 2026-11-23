@@ -28,6 +28,15 @@ PgSession: TypeAlias = asyncpg.Connection
 MemCacheSession: TypeAlias = aiomcache.Client
 
 
+def _counted(value: int) -> int:
+    """
+    Amount a child organization's email identity allocation adds to its parent's utilized_email_identities
+    Unlimited identities (-1) take nothing fixed from the parent, so they count as 0 (never as the number -1)
+    Storage quota is never unlimited, so it does not need this
+    """
+    return 0 if value == -1 else value
+
+
 def shorten_api_key(api_key: str) -> str:
     """
     Docstring for shorten_api_key
@@ -95,8 +104,10 @@ async def validate_organization_quota(db_session: PgSession, organization_id: st
         )
 
     # Email Identities check
+    # Skipped when the organization has unlimited identities (-1) or nothing is being added (callers that
+    # only need a storage check pass -1 / 0, which must not fail because of an earlier identity overuse)
     allocated_email_identities, utilized_email_identities = int(row["allocated_email_identities"]), int(row["utilized_email_identities"])
-    if allocated_email_identities != -1 and utilized_email_identities + required_email_identities > allocated_email_identities:
+    if allocated_email_identities != -1 and required_email_identities > 0 and utilized_email_identities + required_email_identities > allocated_email_identities:
         raise All_Exceptions(
             message=f"Not enough email identities available. Required: {required_email_identities - (allocated_email_identities - utilized_email_identities)}, Available: {allocated_email_identities - utilized_email_identities}, Requested: {required_email_identities}",
             status_code=status.HTTP_412_PRECONDITION_FAILED
@@ -191,12 +202,24 @@ async def create_new_organization(
         exception_message=f"Parent organization with ID {parent_organization_id} does not exist"
     )
 
-    # Validate the quota for the organization
+    # Unlimited email identities (-1) can only be given if the parent organization also has unlimited identities
+    if allocated_email_identities == -1:
+        parent_allocated_email_identities = await db_session.fetchval(
+            "SELECT allocated_email_identities FROM organizations WHERE organization_id = $1",
+            parent_organization_id
+        )
+        if parent_allocated_email_identities != -1:
+            raise All_Exceptions(
+                message=f"Cannot allocate unlimited email identities because parent organization {parent_organization_id} does not have unlimited email identities",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+    # Validate the quota for the organization (unlimited identities ask nothing fixed from the parent)
     await validate_organization_quota(
         db_session=db_session,
         organization_id=parent_organization_id,
         required_storage_quota=quota_allocated,
-        required_email_identities=allocated_email_identities
+        required_email_identities=_counted(allocated_email_identities)
     )
 
     try:
@@ -228,20 +251,19 @@ async def create_new_organization(
             hierarchy_path
         )
 
-        # If the allocated quota is -1 (unlimited), then we do not need to update the parent organization's quota
-        # Reduce the parent organization's quota if the allocated quota is not unlimited
-        if quota_allocated != -1:
-            await db_session.execute(
-                """
-                UPDATE organizations
-                SET quota_utilized = quota_utilized + $1,
-                    utilized_email_identities = utilized_email_identities + $2
-                WHERE organization_id = $3 AND is_active = TRUE
-                """,
-                quota_allocated,
-                allocated_email_identities,
-                parent_organization_id
-            )
+        # Add the child's allocation to the parent organization's utilized counters
+        # Storage is always a real amount; unlimited identities (-1) add nothing
+        await db_session.execute(
+            """
+            UPDATE organizations
+            SET quota_utilized = quota_utilized + $1,
+                utilized_email_identities = utilized_email_identities + $2
+            WHERE organization_id = $3 AND is_active = TRUE
+            """,
+            quota_allocated,
+            _counted(allocated_email_identities),
+            parent_organization_id
+        )
 
         # Return the newly created organization ID
         return organization_id
@@ -673,8 +695,12 @@ async def update_organization_identity_quota(db_session: PgSession, organization
         )
 
         # Update the parent organization's utilized email identities if the new quota is greater than the current quota
-        if new_quota > current_allocated_email_identities:
-            additional_email_identities = new_quota - current_allocated_email_identities
+        # Unlimited (-1) is counted as 0 for the parent (not as the number -1)
+        if organization_id == parent_organization_id:
+            # The initial organization is its own parent, so there is no parent organization to update
+            pass
+        elif new_quota > current_allocated_email_identities:
+            additional_email_identities = _counted(new_quota) - _counted(current_allocated_email_identities)
             await db_session.execute(
                 """
                 UPDATE organizations
@@ -685,7 +711,7 @@ async def update_organization_identity_quota(db_session: PgSession, organization
                 parent_organization_id
             )
         elif new_quota < current_allocated_email_identities:
-            reduced_email_identities = current_allocated_email_identities - new_quota
+            reduced_email_identities = _counted(current_allocated_email_identities) - _counted(new_quota)
             await db_session.execute(
                 """
                 UPDATE organizations
@@ -752,7 +778,7 @@ async def delete_organization(db_session: PgSession, organization_id: str) -> No
             """,
             quota_allocated,
             parent_organization_id,
-            allocated_email_identities
+            _counted(allocated_email_identities)
         )
 
     except Exception as e:

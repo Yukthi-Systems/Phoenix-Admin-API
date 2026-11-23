@@ -20,7 +20,7 @@ version 3 along with this program. If not, see
 """
 
 
-from src.utils.models import ChatServiceConfigUpdateForm, All_Exceptions
+from src.utils.models import ChatServiceConfigUpdateForm, All_Exceptions, NonNegativeStorageQuotaQuery
 from src.utils.base.libraries import JSONResponse, APIRouter, status
 from src.main import CurrentUser, validate_permissions
 from src.database import (
@@ -82,7 +82,7 @@ async def update_chat_service_config(data: ChatServiceConfigUpdateForm, user: Cu
 
 # Update Chat Service Quota
 @router.put("/config/quota/update/{organization_id}", response_class=JSONResponse, tags=["Chat Service"], description="Update Chat Service Quota at Organization level")
-async def update_chat_service_quota(organization_id: str, new_quota: float, user: CurrentUser, PgDB: PostgresDep) -> JSONResponse:
+async def update_chat_service_quota(organization_id: str, new_quota: NonNegativeStorageQuotaQuery, user: CurrentUser, PgDB: PostgresDep) -> JSONResponse:
     """
     Update Chat Service Quota at Organization level
     """

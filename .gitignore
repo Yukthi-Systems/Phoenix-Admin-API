@@ -24,3 +24,7 @@ logs/
 # Other Ignore Files/Paths should be added here
 temp/
 *.db
+
+# Local audit queries / exported results (contain customer data)
+test/org_counter_audit.sql
+test/expected_*.csv

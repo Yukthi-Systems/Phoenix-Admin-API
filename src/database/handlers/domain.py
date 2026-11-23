@@ -456,12 +456,14 @@ async def migrate_domain_to_new_organization(db_session: PgSession, organization
         domain_name=domain_name
     )
 
-    # Get the total allocated quota for the domain (including all services like mailbox, chat, file, etc.)
-    # to validate the new organization's quota before migrating the domain
+    # Get everything that moves with the domain, so both organizations' counters can be updated:
+    # storage = mailboxes + file users quota, identities = email identities under the domain
     row = await db_session.fetchrow(
         """
-        SELECT 
-            (SELECT SUM(quota_allocated) FROM mailboxes WHERE domain_name = $1) AS total_mailbox_quota
+        SELECT
+            (SELECT COALESCE(SUM(quota_allocated), 0) FROM mailboxes WHERE domain_name = $1)
+            + (SELECT COALESCE(SUM(quota_allocated), 0) FROM file_users WHERE domain_name = $1) AS total_quota,
+            (SELECT COUNT(*) FROM email_identities WHERE domain_name = $1) AS total_identities
         """,
         domain_name
     )
@@ -470,16 +472,15 @@ async def migrate_domain_to_new_organization(db_session: PgSession, organization
             message=f"Domain {domain_name} does not exist",
             status_code=status.HTTP_404_NOT_FOUND
         )
-    total_mailbox_quota = float(row["total_mailbox_quota"] or 0.0)
+    total_quota = float(row["total_quota"] or 0.0)
+    total_identities = int(row["total_identities"] or 0)
 
-    # TODO: Add more services (like chat, file) in the above query to get the total allocated quota for the domain across all services
-
-    # Quota validation for the new organization
+    # Quota validation for the new organization (storage and email identities)
     await validate_organization_quota(
         db_session=db_session,
         organization_id=new_organization_id,
-        required_storage_quota=total_mailbox_quota,
-        required_email_identities=-1
+        required_storage_quota=total_quota,
+        required_email_identities=total_identities
     )
 
     try:
@@ -577,25 +578,29 @@ async def migrate_domain_to_new_organization(db_session: PgSession, organization
                 organization_id
             )
 
-            # Update the old organization's quota (decrease the quota_utilized)
+            # Update the old organization's counters (storage and email identities leave with the domain)
             await db_session.execute(
                 """
                 UPDATE organizations
-                SET quota_utilized = quota_utilized - $1
-                WHERE organization_id = $2
+                SET quota_utilized = quota_utilized - $1,
+                    utilized_email_identities = utilized_email_identities - $2
+                WHERE organization_id = $3
                 """,
-                total_mailbox_quota,
+                total_quota,
+                total_identities,
                 organization_id
             )
 
-            # Update the new organization's quota (increase the quota_utilized)
+            # Update the new organization's counters (storage and email identities arrive with the domain)
             await db_session.execute(
                 """
                 UPDATE organizations
-                SET quota_utilized = quota_utilized + $1
-                WHERE organization_id = $2
+                SET quota_utilized = quota_utilized + $1,
+                    utilized_email_identities = utilized_email_identities + $2
+                WHERE organization_id = $3
                 """,
-                total_mailbox_quota,
+                total_quota,
+                total_identities,
                 new_organization_id
             )
 
