@@ -22,12 +22,13 @@ version 3 along with this program. If not, see
 
 
 # FastAPI libraries
-from fastapi import FastAPI, Request, status, Response, Depends, APIRouter, UploadFile
+from fastapi import FastAPI, Request, status, Response, Depends, APIRouter, UploadFile, Query
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 
 # Object data modeling libraries
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from botocore.config import Config
 from openai import OpenAI
 from enum import Enum

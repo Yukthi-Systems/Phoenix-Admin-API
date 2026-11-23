@@ -21,7 +21,7 @@ version 3 along with this program. If not, see
 
 
 from src.main import CurrentUser, validate_permissions, assign_new_mailbox_server, delete_email_on_server
-from src.utils.models import CreateMailBoxForm, UpdateMailBoxInfoForm
+from src.utils.models import CreateMailBoxForm, UpdateMailBoxInfoForm, StorageQuotaQuery
 from src.utils.base.libraries import JSONResponse, APIRouter, status
 from src.database import (
     update_mailbox_activation_status,
@@ -293,7 +293,7 @@ async def activate_deactivate_mailbox(domain_name: str, email_prefix: str, is_en
 
 # Update Quota
 @router.patch("/edit/quota/{domain_name}/{email_prefix}", response_class=JSONResponse, tags=["MailBox Management"], summary="Update MailBox quota")
-async def update_mailbox_quota_value(domain_name: str, email_prefix: str, new_quota_allocated: float, user: CurrentUser, PgDB: PostgresDep) -> JSONResponse:
+async def update_mailbox_quota_value(domain_name: str, email_prefix: str, new_quota_allocated: StorageQuotaQuery, user: CurrentUser, PgDB: PostgresDep) -> JSONResponse:
     """
     Update MailBox quota
     """
@@ -330,7 +330,7 @@ async def update_mailbox_quota_value(domain_name: str, email_prefix: str, new_qu
         db_session=PgDB,
         email=f"{email_prefix}@{domain_name}",
         domain_name=domain_name,
-        org_id=user.organization_id,
+        org_id=domain_info["managed_by"],   # Owner of the mailbox, not the logged-in admin's org
         new_quota=new_quota_allocated
     )
 

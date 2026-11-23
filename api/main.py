@@ -22,6 +22,7 @@ version 3 along with this program. If not, see
 
 
 from src.utils.base.libraries import (
+    RequestValidationError,
     CORSMiddleware,
     JSONResponse,
     FastAPI,
@@ -73,6 +74,27 @@ async def input_data_exception_handler(request: Request, exc: All_Exceptions):
     return JSONResponse(
         status_code=exc.status_code,
         content={"message": f"Oops! {exc.message}", "traceback_id": exc.traceback_id}
+    )
+
+
+# Exception handler for request validation errors (invalid body / query / path values)
+# Returns a readable "message" like All_Exceptions does
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = [
+        {
+            "field": ".".join(str(part) for part in error.get("loc", ()) if part not in ("body", "query", "path")),
+            "message": str(error.get("msg", "Invalid value")).removeprefix("Value error, ")
+        }
+        for error in exc.errors()
+    ]
+    logging.warning(f"Request validation failed: {request.method} {request.url.path} - {errors}")
+    return JSONResponse(
+        status_code=422,
+        content={
+            "message": "Oops! Invalid input: " + "; ".join(f"{e['field']}: {e['message']}" if e["field"] else e["message"] for e in errors),
+            "errors": errors
+        }
     )
 
 

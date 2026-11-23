@@ -29,7 +29,7 @@ from src.utils.base.libraries import (
     status
 )
 from src.main import CurrentUser, has_required_permissions, validate_permissions, put_s3_file, get_s3_file
-from src.utils.models import CreateOrganizationForm, CreateAPIKeyForm, All_Exceptions
+from src.utils.models import CreateOrganizationForm, CreateAPIKeyForm, All_Exceptions, StorageQuotaQuery, EmailIdentitiesQuery
 from src.database import (
     update_organization_activation_status,
     check_if_org_has_children_or_domains,
@@ -330,7 +330,7 @@ async def organization_activation(organization_id: str, activate: bool, user: Cu
 
 # Update Organization Identity Quota
 @router.put("/quota/identity/{organization_id}", response_class=JSONResponse, tags=["Organization Management"], summary="Update Organization Identity Quota")
-async def organization_identity_quota_update(organization_id: str, new_allocated_quota: int, user: CurrentUser, PgDB: PostgresDep) -> JSONResponse:
+async def organization_identity_quota_update(organization_id: str, new_allocated_quota: EmailIdentitiesQuery, user: CurrentUser, PgDB: PostgresDep) -> JSONResponse:
     """
     Update organization identity quota
     """
@@ -366,7 +366,7 @@ async def organization_identity_quota_update(organization_id: str, new_allocated
 
 # Update Organization Storage Quota
 @router.put("/quota/storage/{organization_id}", response_class=JSONResponse, tags=["Organization Management"], summary="Update Organization Storage Quota")
-async def organization_storage_quota_update(organization_id: str, new_allocated_quota: float, user: CurrentUser, PgDB: PostgresDep) -> JSONResponse:
+async def organization_storage_quota_update(organization_id: str, new_allocated_quota: StorageQuotaQuery, user: CurrentUser, PgDB: PostgresDep) -> JSONResponse:
     """
     Update organization quota
     """

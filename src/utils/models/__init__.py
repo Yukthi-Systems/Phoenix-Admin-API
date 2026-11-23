@@ -59,7 +59,10 @@ from .query_forms import (
     CreateInvoice,
     PasswdReset,
     AuthRequest,
-    AddAuditLog
+    AddAuditLog,
+    StorageQuotaQuery,
+    NonNegativeStorageQuotaQuery,
+    EmailIdentitiesQuery
 )
 
 
@@ -112,6 +115,9 @@ __annotations__ = {
 
 
 __all__ = [
+    "StorageQuotaQuery",
+    "NonNegativeStorageQuotaQuery",
+    "EmailIdentitiesQuery",
     "All_Exceptions",
     "AuthRequest",
     "CreateUserForm",

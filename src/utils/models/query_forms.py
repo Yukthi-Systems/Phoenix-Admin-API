@@ -20,7 +20,28 @@ version 3 along with this program. If not, see
 """
 
 
-from src.utils.base.libraries import BaseModel, Field, List, Optional, Enum, datetime
+from src.utils.base.libraries import BaseModel, Field, List, Optional, Enum, datetime, Annotated, Query, field_validator
+
+
+# Limits of the quota columns in the database
+# Storage columns are NUMERIC(10,2) -> largest value is 99,999,999.99 (GB)
+# Email identity columns are INT -> largest value is 2,147,483,647
+MAX_STORAGE_QUOTA_GB = 99_999_999.99
+MAX_EMAIL_IDENTITIES = 2_147_483_647
+
+# Query parameter types for quota updates (rejected with 422 before reaching any handler)
+# Storage is always a real amount (never unlimited), NaN / Infinity are not allowed
+StorageQuotaQuery = Annotated[float, Query(gt=0, le=MAX_STORAGE_QUOTA_GB, allow_inf_nan=False, description="Storage quota in GigaBytes, must be greater than 0")]
+NonNegativeStorageQuotaQuery = Annotated[float, Query(ge=0, le=MAX_STORAGE_QUOTA_GB, allow_inf_nan=False, description="Storage quota in GigaBytes, 0 or more")]
+# Email identities: -1 for unlimited or at least 1 (0 is rejected by the handler)
+EmailIdentitiesQuery = Annotated[int, Query(ge=-1, le=MAX_EMAIL_IDENTITIES, description="Email identities, -1 for unlimited or at least 1")]
+
+
+def _validate_email_identities_value(value: int) -> int:
+    """Email identities allocation must be -1 (unlimited) or at least 1"""
+    if value == -1 or 1 <= value <= MAX_EMAIL_IDENTITIES:
+        return value
+    raise ValueError(f"Allocated email identities must be -1 (unlimited) or between 1 and {MAX_EMAIL_IDENTITIES}")
 
 
 class AuthRequest(BaseModel):
@@ -132,9 +153,14 @@ class CreateOrganizationForm(BaseModel):
     chat_service_enabled: bool = Field(..., title="Chat Service Enabled", description="Enable or disable chat service for the organization")
     file_service_enabled: bool = Field(..., title="File Service Enabled", description="Enable or disable file service for the organization")
     tasks_service_enabled: bool = Field(..., title="Tasks Service Enabled", description="Enable or disable tasks service for the organization")
-    allocated_quota: float = Field(..., title="Allocated Quota", description="Size of the quota in GigaBytes, max size of the organization - quota_allocated")
-    allocated_email_identities: int = Field(..., title="Allocated Email Identities", description="Total email identities allocated for the organization (-1 for unlimited)")
+    allocated_quota: float = Field(..., gt=0, le=MAX_STORAGE_QUOTA_GB, allow_inf_nan=False, title="Allocated Quota", description="Size of the quota in GigaBytes, max size of the organization - quota_allocated (must be greater than 0)")
+    allocated_email_identities: int = Field(..., title="Allocated Email Identities", description="Total email identities allocated for the organization (-1 for unlimited, otherwise at least 1)")
     parent_organization_id: str = Field(..., title="Parent Organization ID", description="ID of the parent organization")
+
+    @field_validator("allocated_email_identities")
+    @classmethod
+    def check_allocated_email_identities(cls, value: int) -> int:
+        return _validate_email_identities_value(value)
 
     class Config:
         """
@@ -371,7 +397,7 @@ class CreateMailBoxForm(BaseModel):
     """
     email_identity: str = Field(..., title="Email Identity", description="Email identity of the mailbox, e.g., 'user@domain.com'")
     enabled: bool = Field(..., title="Enabled", description="Enable the mailbox - is_active")
-    allocate_quota: float = Field(..., title="Allocated Quota", description="Size of the quota in GigaBytes, max size of the organization - quota_allocated")
+    allocate_quota: float = Field(..., gt=0, le=MAX_STORAGE_QUOTA_GB, allow_inf_nan=False, title="Allocated Quota", description="Size of the mailbox quota in GigaBytes (must be greater than 0)")
     general_policy_id: Optional[str] = Field(None, title="General Policy ID", description="ID of the general policy to be associated with the mailbox")
     forwarding_policy_id: Optional[str] = Field(None, title="Forwarding Policy ID", description="ID of the forwarding policy to be associated with the mailbox")
     distribution_policy_id: Optional[str] = Field(None, title="Distribution Policy ID", description="ID of the distribution policy to be associated with the mailbox")
@@ -1201,7 +1227,7 @@ class FilesUserCreateForm(BaseModel):
     Create new Files user form for the endpoint
     """
     email_identity: str = Field(..., title="Email Identity", description="Email identity for the Files user")
-    quota_allocated: float = Field(..., title="Quota Allocated", description="Quota allocated for the Files user")
+    quota_allocated: float = Field(..., gt=0, le=MAX_STORAGE_QUOTA_GB, allow_inf_nan=False, title="Quota Allocated", description="Quota allocated for the Files user in GigaBytes (must be greater than 0)")
     domain_name: str = Field(..., title="Domain Name", description="Domain name for the Files user")
     enable_user: bool = Field(..., title="Enable User", description="Enable or disable the Files user")
 
